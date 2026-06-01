@@ -65,6 +65,9 @@ class ControlUnit:
         logging.debug(log)
         print(log)
         self.file.write(log + "\n")
+        if self.machine.PS & 0x20 or self.machine.io_controller.IREQ:
+            return
+        self.machine.io_controller.update(self.tick)
 
     def command_repr(self):
         if isinstance(self.machine.CR, Command):
@@ -340,7 +343,6 @@ class ControlUnit:
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
-        self.tick_()
 
         self.machine.load_dr()
         self.machine.load_left_zero()
@@ -508,15 +510,14 @@ class ControlUnit:
 
         if not self.machine.io_controller.IREQ:
             return
+        self.handle_interrupt()
 
-        self.handle_interrupt(self.machine.io_controller.IPort)
-
-    def handle_interrupt(self, port: int):
+    def handle_interrupt(self):
         self.machine.load_ps()
         self.machine.load_right_zero()
         self.machine.alu.sum()
         self.machine.latch_dr()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
 
         self.machine.load_sp()
         self.machine.load_left_zero()
@@ -524,7 +525,7 @@ class ControlUnit:
         self.machine.alu.sum()
         self.machine.latch_sp()
         self.machine.latch_ar()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
 
         self.machine.write(self.tick_, self.now)
         self.machine.load_sp()
@@ -535,10 +536,10 @@ class ControlUnit:
         self.machine.latch_ar()
 
         self.machine.load_ip()
-        self.machine.load_right_zero()
+        self.machine.load_left_zero()
         self.machine.alu.sum()
         self.machine.latch_dr()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
 
         self.machine.write(self.tick_, self.now)
 
@@ -549,18 +550,21 @@ class ControlUnit:
         self.machine.load_right_zero()
         self.machine.alu.sum()
         self.machine.latch_ar()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
 
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
 
         self.machine.load_dr()
         self.machine.load_left_zero()
         self.machine.alu.sum()
         self.machine.latch_ip()
-        self.tick_(info="HANDLE INTERRUPT")
+        self.tick_(info="HANDLE INTERRUPT; ")
+
+
+        self.machine.io_controller.IREQ = False
 
 
     def cycle(self):

@@ -1,4 +1,4 @@
-from Lexer import TokenType
+from Lexer import TokenType, Token
 
 
 class Node:
@@ -89,6 +89,14 @@ class OutNode(Node):
 class ReadNode(Node):
     def __init__(self, value):
         self.value = value
+
+class EINode(Node):
+    def __init__(self):
+        pass
+
+class DINode(Node):
+    def __init__(self):
+        pass
 
 class Parser:
     tokens: list
@@ -263,7 +271,18 @@ class Parser:
             self.consume(TokenType.SEMICOLON)
 
             return AssignNode(node, value)
+        if t == TokenType.EI:
+            self.consume(TokenType.EI)
+            self.consume(TokenType.SEMICOLON)
+            return EINode()
+
+        if t == TokenType.DI:
+            self.consume(TokenType.DI)
+            self.consume(TokenType.SEMICOLON)
+            return DINode()
+
         print(self.current())
+
         raise SyntaxError("Invalid statement")
 
     def parse_assignment(self):

@@ -110,25 +110,15 @@ class Analyzer:
 
         self.functions[node.name] = len(node.params)
 
-        old_vars = self.variables.copy()
-        self.variables = {}
-
         for param in node.params:
             self.variables[param] = True
 
         for stmt in node.body:
             self.visit(stmt)
 
-        self.variables = old_vars
-
     def visitInterruptFunctionNode(self, node):
-        old_vars = self.variables.copy()
-        self.variables = {}
-
         for stmt in node.body:
             self.visit(stmt)
-
-        self.variables = old_vars
 
     def visitFunctionCallNode(self, node):
         if node.name not in self.functions:

@@ -33,6 +33,8 @@ class CodeGenerator:
             InNode: self.visitInNode,
             OutNode: self.visitOutNode,
             ReadNode: self.visitReadNode,
+            DINode: self.visitDINode,
+            EINode: self.visitEINode
         }
 
     def generate(self, program):
@@ -372,7 +374,6 @@ class CodeGenerator:
                 0
             )
 
-
         self.emit(
             OpCode.RET,
             AddrMode.DIRECT,
@@ -380,10 +381,20 @@ class CodeGenerator:
         )
 
     def visitInterruptFunctionNode(self, node):
-        self.global_[node.port] = len(self.code)
+        self.global_[node.port] = len(self.code) + self.start
+
+        self.locals = {}
+        self.local_count = 0
 
         for stmt in node.body:
             self.visit(stmt)
+
+        for i in range(self.local_count):
+            self.emit(
+                OpCode.INC_SP,
+                AddrMode.DIRECT,
+                0
+            )
 
         self.emit(
             OpCode.IRET,
@@ -393,9 +404,6 @@ class CodeGenerator:
 
     def visitFunctionNode(self, node):
         self.functions[node.name] = len(self.code) + self.start
-
-        old_variables = self.variables
-        self.variables = {}
 
         self.locals = {}
         self.local_count = 0
@@ -418,8 +426,6 @@ class CodeGenerator:
                 AddrMode.DIRECT,
                 0
             )
-
-        self.variables = old_variables
 
     def visitInNode(self, node):
         self.emit(
@@ -449,4 +455,18 @@ class CodeGenerator:
             OpCode.LOAD,
             AddrMode.RELATIVE_INDIRECT,
             self.tmp_addr
+        )
+
+    def visitEINode(self, node):
+        self.emit(
+            OpCode.EI,
+            AddrMode.DIRECT,
+            0
+        )
+
+    def visitDINode(self, node):
+        self.emit(
+            OpCode.DI,
+            AddrMode.DIRECT,
+            0
         )

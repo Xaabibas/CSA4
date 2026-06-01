@@ -44,6 +44,8 @@ class TokenType(Enum):
     IN = "@"
     OUT = "%"
     READ = "&"
+    EI = "$"
+    DI = "!$"
 
     EOF = "EOF"
 
@@ -82,7 +84,9 @@ OPERATORS = {
 
     "@": TokenType.IN,
     "%": TokenType.OUT,
-    "&": TokenType.READ
+    "&": TokenType.READ,
+    "!$": TokenType.DI,
+    "$": TokenType.EI
 }
 
 @dataclass
@@ -151,6 +155,13 @@ class Lexer:
 
         value = self.current()
 
+        if self.current() == "\\":
+            self.advance()
+            if self.current() == "n":
+                value = '\n'
+            else:
+                raise SyntaxError("Bad char")
+
         self.advance()
 
         if self.current() != "'":
@@ -174,7 +185,10 @@ class Lexer:
                 op = c + "="
                 self.advance()
                 return Token(OPERATORS[op], op, self.line)
-
+            if self.current() == "$":
+                op = c + "$"
+                self.advance()
+                return Token(OPERATORS[op], op, self.line)
             if c == "!":
                 raise SyntaxError("Expected '=' after '!'")
 
@@ -210,7 +224,7 @@ class Lexer:
             if c =="'":
                 tokens.append(self.read_char())
                 continue
-            if c in "=+-*<>,;(){}!@%&":
+            if c in "=+-*<>,;(){}!@%&$":
                 tokens.append(self.read_operator())
                 continue
 

@@ -33,7 +33,7 @@ class Translator:
     def load(self, start=2048):
         for addr, command in enumerate(self.code):
             self.cu.memory.memory[addr + start] = command
-        for port, handle_addr in self.global_:
+        for port, handle_addr in self.global_.items():
             self.cu.memory.memory[port] = handle_addr
         self.cu.machine.IP = start
 
@@ -46,48 +46,27 @@ def run(cu: ControlUnit, limit: int):
         else:
             raise Exception("Op limit")
     except SystemExit:
-        for i in range(6):
+        for i in range(32):
             print(cu.memory.memory.get(65536 + i, 0))
+
+        for i in range(32):
+            print(cu.memory.memory.get(128 + i, 0))
 
 
 
 if __name__ == "__main__":
-    ex = """
-func print_int(c) {
-    % c;
-}
+    stdlib = open("stdlib")
+    content = stdlib.read()
+    stdlib.close()
 
-func print_string(s) {
-    var len = &(s);
-    var i = 1;
-    while (i <= len) {
-        print_int(&(s + i));
-        i = i + 1;
-    }
-}
-
-func input_int() {
-    return @;
-}
-
-func input_str() {
-    var len = input_int();
-
-    var i = 1;
-    var buffer = "________________________________________________________________________________________________________________________________";
-    while (i <= len) {
-        &(buffer + i) = input_int();
-        i = i + 1;
-    }
-    &(buffer) = len;
-
-    return buffer;
-}
-
-var x = input_str();
+    program = """
+var y = "aaaaa";
+var x = input_string();
     """
+
+    program = content + "\n" + program
     with open("debug", "w") as file:
-        translator = Translator(ex, file)
+        translator = Translator(program, file)
         translator.translate()
         cu = translator.load()
 

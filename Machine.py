@@ -10,7 +10,8 @@ from External import IOController
 class Machine:
     alu: ALU = ALU()
     memory: Memory
-    io_controller: IOController = IOController()
+    # io_controller: IOController = IOController()
+    io_controller: IOController = IOController([(1, 'h'), (10, 'e'), (20, 'l'), (25, 'l'), (100, 'o'), (102, '\n')])
     AC: int = 0
     BR: int | Command = 0
     PS: int = 0
@@ -83,7 +84,7 @@ class Machine:
         self.CR = self.memory_bus
 
     def latch_sp(self):
-        self.SP = self.alu.out
+        self.SP = self.alu.out & (2 ** MagicNumber.ADDR_LEN.value - 1)
 
     def latch_dr(self):
         if self.DR_selector:

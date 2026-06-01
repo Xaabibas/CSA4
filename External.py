@@ -2,9 +2,13 @@ class ExternalDevice:
     DR: int = 2
     SR: int = 0 # младший бит - бит готовности, второй младший бит - запрос прерывания
 
+    schedule: [(int, str)]
+
+    def __init__(self, schedule=None):
+        self.schedule = schedule
+
     def read_data(self):
         self.SR = self.SR & 0xFFFFFFFC
-        print("read:", self.DR)
         return self.DR
 
     def read_status(self):
@@ -12,20 +16,34 @@ class ExternalDevice:
 
     def write_data(self, data: int):
         self.DR = data
-        self.SR = self.SR | 0x00000001
-        print("written:", data)
+        self.request_interrupt()
 
     def request_interrupt(self):
         self.SR = self.SR | 0x00000003
 
+    def update(self, now):
+        if self.schedule is None or len(self.schedule) == 0:
+            return
+        if self.SR & 0x2:
+            return
+        next_time = self.schedule[0][0]
+
+        if now >= next_time:
+            next_str = self.schedule.pop(0)[1]
+            self.write_data(ord(next_str))
+            print("written:", self.DR)
+
+
 class IOController:
     devices: {int: ExternalDevice}
     buffer: int
-    IREQ: bool
+    IREQ: bool = False
     IPort: int = 0
 
-    def __init__(self):
-        self.devices = {0: ExternalDevice(),
+    def __init__(self, input_schedule=None):
+        if input_schedule is None:
+            input_schedule = [(1, '\n')]
+        self.devices = {0: ExternalDevice(schedule=input_schedule),
                         1: ExternalDevice()}
 
     def register(self, port: int, device: ExternalDevice):
@@ -38,6 +56,8 @@ class IOController:
         self.devices[port].write_data(self.buffer)
 
     def check_interrupts(self):
+        if self.IREQ:
+            return
         self.IREQ = False
         for port, device in self.devices.items():
             if device.SR & 0x2:
@@ -45,3 +65,7 @@ class IOController:
                 self.IPort = port
                 device.SR &= ~0x2
                 break
+
+    def update(self, now):
+        for device in self.devices.values():
+            device.update(now)
