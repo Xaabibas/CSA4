@@ -4,7 +4,7 @@ from CommandTypes import Command, OpCode, AddrMode
 
 class CodeGenerator:
 
-    def __init__(self, start=512):
+    def __init__(self, start=2048):
         self.code = []
 
         self.variables = {}
@@ -16,6 +16,7 @@ class CodeGenerator:
 
         self.data_addr = 128
         self.tmp_addr = 256
+        self.string_addr = 65536
         self.start = start
 
         self.visits = {
@@ -28,7 +29,10 @@ class CodeGenerator:
             FunctionNode: self.visitFunctionNode,
             FunctionCallNode: self.visitFunctionCallNode,
             ReturnNode: self.visitReturnNode,
-            InterruptFunctionNode: self.visitInterruptFunctionNode
+            InterruptFunctionNode: self.visitInterruptFunctionNode,
+            InNode: self.visitInNode,
+            OutNode: self.visitOutNode,
+            ReadNode: self.visitReadNode,
         }
 
     def generate(self, program):
@@ -150,17 +154,73 @@ class CodeGenerator:
             )
 
             self.tmp_addr -= 1
+        elif isinstance(node, CharNode):
+            self.emit(
+                OpCode.LOAD,
+                AddrMode.DIRECT_LOAD,
+                ord(node.value)
+            )
+        elif isinstance(node, StringNode):
+            length = len(node.value)
+
+            self.emit(
+                OpCode.LOAD,
+                AddrMode.DIRECT_LOAD,
+                length
+            )
+            self.emit(
+                OpCode.STR,
+                AddrMode.DIRECT,
+                self.string_addr
+            )
+            self.string_addr += 1
+
+            for c in node.value:
+                self.emit(
+                    OpCode.LOAD,
+                    AddrMode.DIRECT_LOAD,
+                    ord(c)
+                )
+                self.emit(
+                    OpCode.STR,
+                    AddrMode.DIRECT,
+                    self.string_addr
+                )
+                self.string_addr += 1
+
+            self.emit(
+                OpCode.LOAD,
+                AddrMode.DIRECT_LOAD,
+                self.string_addr - length - 1
+            )
+
         else:
             self.visit(node)
 
     def visitAssignNode(self, node):
-        self.generate_expression(node.value)
+        if isinstance(node.name, ReadNode):
+            self.generate_expression(node.name.value)
+            self.emit(
+                OpCode.STR,
+                AddrMode.DIRECT,
+                self.tmp_addr
+            )
+            self.tmp_addr += 1
+            self.generate_expression(node.value)
+            self.tmp_addr -= 1
+            self.emit(
+                OpCode.STR,
+                AddrMode.RELATIVE_INDIRECT,
+                self.tmp_addr
+            )
 
+            return
+        self.generate_expression(node.value)
         if node.name in self.locals:
             self.emit(
                 OpCode.STR,
                 AddrMode.RELATIVE_SP,
-                -self.locals[node.name]
+                -self.locals[node.name] + self.local_count
             )
             return
         self.emit(
@@ -260,7 +320,7 @@ class CodeGenerator:
         self.code[then_pos].arg = len(self.code) + self.start
 
     def visitWhileNode(self, node):
-        loop_start = len(self.code)
+        loop_start = len(self.code) + self.start
 
         self.visit(node.condition)
 
@@ -305,13 +365,13 @@ class CodeGenerator:
     def visitReturnNode(self, node):
         if node.value:
             self.generate_expression(node.value)
-
         for i in range(self.local_count):
             self.emit(
                 OpCode.INC_SP,
                 AddrMode.DIRECT,
                 0
             )
+
 
         self.emit(
             OpCode.RET,
@@ -347,6 +407,12 @@ class CodeGenerator:
             self.visit(stmt)
 
         if self.code[-1].op_code != OpCode.RET:
+            for i in range(self.local_count):
+                self.emit(
+                    OpCode.INC_SP,
+                    AddrMode.DIRECT,
+                    0
+                )
             self.emit(
                 OpCode.RET,
                 AddrMode.DIRECT,
@@ -354,3 +420,33 @@ class CodeGenerator:
             )
 
         self.variables = old_variables
+
+    def visitInNode(self, node):
+        self.emit(
+            OpCode.IN,
+            AddrMode.DIRECT_LOAD,
+            0
+        )
+
+    def visitOutNode(self, node):
+        self.generate_expression(node.value)
+        self.emit(
+            OpCode.OUT,
+            AddrMode.DIRECT_LOAD,
+            1
+        )
+
+    def visitReadNode(self, node):
+        self.generate_expression(node.value)
+
+        self.emit(
+            OpCode.STR,
+            AddrMode.DIRECT,
+            self.tmp_addr
+        )
+
+        self.emit(
+            OpCode.LOAD,
+            AddrMode.RELATIVE_INDIRECT,
+            self.tmp_addr
+        )

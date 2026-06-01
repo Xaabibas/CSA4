@@ -1,9 +1,10 @@
 class ExternalDevice:
-    DR: int = 0
+    DR: int = 2
     SR: int = 0 # младший бит - бит готовности, второй младший бит - запрос прерывания
 
     def read_data(self):
         self.SR = self.SR & 0xFFFFFFFC
+        print("read:", self.DR)
         return self.DR
 
     def read_status(self):
@@ -12,6 +13,7 @@ class ExternalDevice:
     def write_data(self, data: int):
         self.DR = data
         self.SR = self.SR | 0x00000001
+        print("written:", data)
 
     def request_interrupt(self):
         self.SR = self.SR | 0x00000003
@@ -23,7 +25,8 @@ class IOController:
     IPort: int = 0
 
     def __init__(self):
-        self.devices = {}
+        self.devices = {0: ExternalDevice(),
+                        1: ExternalDevice()}
 
     def register(self, port: int, device: ExternalDevice):
         self.devices[port] = device

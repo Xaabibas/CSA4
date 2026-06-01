@@ -19,6 +19,7 @@ class ControlUnit:
             AddrMode.DIRECT: self.direct_addr,
             AddrMode.RELATIVE_IP: self.relative_ip_addr,
             AddrMode.RELATIVE_SP: self.relative_sp_addr,
+            AddrMode.RELATIVE_INDIRECT: self.relative_indirect,
             AddrMode.DIRECT_LOAD: self.direct_load
         }
         self.execution = {
@@ -58,7 +59,7 @@ class ControlUnit:
     def tick_(self, info=""):
         self.tick += 1
         log = (f"Tick #{self.tick}; {info}"
-               f"AC: {self.machine.AC}, BR: {self.machine.BR}, PS:{self.machine.PS}, DR: {self.machine.DR}, CR:{self.machine.CR}, IP: {self.machine.IP}, SP: {self.machine.SP}; " +
+               f"AC: {self.machine.AC}, BR: {self.machine.BR}, PS:{self.machine.PS}, DR: {self.machine.DR}, CR:{self.machine.CR}, IP: {self.machine.IP}, SP: {self.machine.SP}; AR: {self.machine.AR}" +
                # self.command_repr())
                "")
         logging.debug(log)
@@ -120,8 +121,6 @@ class ControlUnit:
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
-        print("DIRECT ADDR", self.machine.DR)
-        self.tick_()
 
     def relative_ip_addr(self):
         self.machine.load_br()
@@ -133,7 +132,6 @@ class ControlUnit:
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
-        self.tick_()
 
     def relative_sp_addr(self):
         self.machine.load_cr()
@@ -150,7 +148,26 @@ class ControlUnit:
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
+
+    def relative_indirect(self):
+        self.machine.load_cr()
+        self.machine.alu.extend()
+        self.machine.latch_ar()
         self.tick_()
+
+        self.machine.read(self.tick_, self.now)
+        self.machine.DR_selector = False
+        self.machine.latch_dr()
+
+        self.machine.load_dr()
+        self.machine.load_left_zero()
+        self.machine.alu.sum()
+        self.machine.latch_ar()
+        self.tick_()
+
+        self.machine.read(self.tick_, self.now)
+        self.machine.DR_selector = False
+        self.machine.latch_dr()
 
     def direct_load(self):
         self.machine.load_cr()

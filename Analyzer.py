@@ -20,16 +20,15 @@ class Analyzer:
             FunctionNode: self.visitFunctionNode,
             BinaryOpNode: self.visitBinOpNode,
             InterruptFunctionNode: self.visitInterruptFunctionNode,
-            FunctionCallNode: self.visitFunctionCallNode,
-            NumberNode: self.visitNumberNode,
-            StringNode: self.visitStringNode,
-            CharNode: self.visitCharNode
+            FunctionCallNode: self.visitFunctionCallNode
         }
 
     def analyze(self, program: ProgramNode):
         self.visitProgramNode(program)
 
     def visit(self, node):
+        if type(node) not in self.visits:
+            return
         self.visits[type(node)](node)
 
 
@@ -56,7 +55,10 @@ class Analyzer:
             )
 
     def visitAssignNode(self, node):
-        if node.name not in self.variables:
+        print(node.name)
+        if isinstance(node.name, ReadNode):
+            self.visit(node.name)
+        elif node.name not in self.variables:
             raise Exception(
                 f"Undefined variable '{node.name}'"
             )
@@ -145,12 +147,3 @@ class Analyzer:
 
         for arg in node.args:
             self.visit(arg)
-
-    def visitNumberNode(self, node):
-        pass
-
-    def visitStringNode(self, node):
-        pass
-
-    def visitCharNode(self, node):
-        pass

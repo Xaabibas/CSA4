@@ -30,7 +30,7 @@ class Translator:
 
         print(generator.variables)
 
-    def load(self, start=512):
+    def load(self, start=2048):
         for addr, command in enumerate(self.code):
             self.cu.memory.memory[addr + start] = command
         for port, handle_addr in self.global_:
@@ -46,29 +46,52 @@ def run(cu: ControlUnit, limit: int):
         else:
             raise Exception("Op limit")
     except SystemExit:
-        for i in range(3):
-            print(cu.memory.memory.get(128 + i, 0))
+        for i in range(6):
+            print(cu.memory.memory.get(65536 + i, 0))
 
 
 
 if __name__ == "__main__":
     ex = """
-    func fact(a) {
-        if (a <= 1) {
-            return 1;
-        }
-        return a * fact(a - 1);
-    }
-    var x = 6;
+func print_int(c) {
+    % c;
+}
 
-    var z = fact(x);
+func print_string(s) {
+    var len = &(s);
+    var i = 1;
+    while (i <= len) {
+        print_int(&(s + i));
+        i = i + 1;
+    }
+}
+
+func input_int() {
+    return @;
+}
+
+func input_str() {
+    var len = input_int();
+
+    var i = 1;
+    var buffer = "________________________________________________________________________________________________________________________________";
+    while (i <= len) {
+        &(buffer + i) = input_int();
+        i = i + 1;
+    }
+    &(buffer) = len;
+
+    return buffer;
+}
+
+var x = input_str();
     """
     with open("debug", "w") as file:
         translator = Translator(ex, file)
         translator.translate()
         cu = translator.load()
 
-        run(cu, 300)
-
+        run(cu, 2000)
         for i in cu.instructions:
             print(i)
+

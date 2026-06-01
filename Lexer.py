@@ -41,6 +41,10 @@ class TokenType(Enum):
     COMMA = ","
     SEMICOLON = ";"
 
+    IN = "@"
+    OUT = "%"
+    READ = "&"
+
     EOF = "EOF"
 
 KEYWORDS = {
@@ -74,7 +78,11 @@ OPERATORS = {
     "<": TokenType.LT,
     "<=": TokenType.LE,
     ">": TokenType.GR,
-    ">=": TokenType.GE
+    ">=": TokenType.GE,
+
+    "@": TokenType.IN,
+    "%": TokenType.OUT,
+    "&": TokenType.READ
 }
 
 @dataclass
@@ -202,8 +210,7 @@ class Lexer:
             if c =="'":
                 tokens.append(self.read_char())
                 continue
-
-            if c in "=+-*<>,;(){}!":
+            if c in "=+-*<>,;(){}!@%&":
                 tokens.append(self.read_operator())
                 continue
 

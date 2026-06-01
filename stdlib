@@ -1,0 +1,30 @@
+func print_int(c) {
+    % c;
+}
+
+func print_string(s) {
+    var len = &(s);
+    var i = 1;
+    while (i <= len) {
+        print_int(&(s + i));
+        i = i + 1;
+    }
+}
+
+func input_int() {
+    return @;
+}
+
+func input_str() {
+    var len = input_int();
+
+    var i = 1;
+    var buffer = "________________________________________________________________________________________________________________________________";
+    while (i <= len) {
+        &(buffer + i) = input_int();
+        i = i + 1;
+    }
+    &(buffer) = len;
+
+    return buffer;
+}

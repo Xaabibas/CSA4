@@ -78,6 +78,18 @@ class BinaryOpNode(Node):
         self.op = op
         self.right = right
 
+class InNode(Node):
+    def __init__(self):
+        pass
+
+class OutNode(Node):
+    def __init__(self, value):
+        self.value = value
+
+class ReadNode(Node):
+    def __init__(self, value):
+        self.value = value
+
 class Parser:
     tokens: list
     pos: int
@@ -229,7 +241,29 @@ class Parser:
                 node = self.parse_function_call()
                 self.consume(TokenType.SEMICOLON)
                 return node
+        if t == TokenType.OUT:
+            self.consume(TokenType.OUT)
+            node = self.parse_expression()
+            self.consume(TokenType.SEMICOLON)
+            return OutNode(node)
 
+        if t == TokenType.READ:
+            if self.pos + 1 >= len(self.tokens):
+                raise SyntaxError("Unexpected EOF")
+
+            self.consume(TokenType.READ)
+            self.consume(TokenType.LBRACKET)
+            node = ReadNode(self.parse_expression())
+            self.consume(TokenType.RBRACKET)
+
+            self.consume(TokenType.ASSIGN)
+
+            value = self.parse_expression()
+
+            self.consume(TokenType.SEMICOLON)
+
+            return AssignNode(node, value)
+        print(self.current())
         raise SyntaxError("Invalid statement")
 
     def parse_assignment(self):
@@ -409,6 +443,16 @@ class Parser:
             self.consume(TokenType.RBRACKET)
 
             return expr
+        if token.type == TokenType.IN:
+            self.consume(TokenType.IN)
+            return InNode()
+
+        if token.type == TokenType.READ:
+            self.consume(TokenType.READ)
+            self.consume(TokenType.LBRACKET)
+            node = self.parse_expression()
+            self.consume(TokenType.RBRACKET)
+            return ReadNode(node)
 
         raise SyntaxError(
             f"Unexpected token {token.type}"
