@@ -3,6 +3,12 @@ from collections.abc import Callable
 from AST import *
 
 
+def visit_number_node(node):
+    if -2**19 <= node.value <= 2**19 - 1:
+        return
+    raise Exception(f"Number {node.value} too large")
+
+
 class Analyzer:
     variables: dict[str, int]
     functions: dict[str, int]
@@ -23,7 +29,7 @@ class Analyzer:
             BinaryOpNode: self.visit_bin_op_node,
             InterruptFunctionNode: self.visit_interrupt_function_node,
             FunctionCallNode: self.visit_function_call_node,
-            NumberNode: self.visit_number_node,
+            NumberNode: visit_number_node,
         }
 
     def analyze(self, program: ProgramNode):
@@ -124,7 +130,3 @@ class Analyzer:
 
         for arg in node.args:
             self.visit(arg)
-    def visit_number_node(self, node):
-        if -2**19 <= node.value <= 2**19 - 1:
-            return
-        raise Exception(f"Number {node.value} too large")
