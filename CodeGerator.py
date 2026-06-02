@@ -60,7 +60,13 @@ class CodeGenerator:
     def visitProgramNode(self, program):
         self.collect_symbols(program)
 
+        self.emit(
+            OpCode.DI,
+            AddrMode.DIRECT,
+            0
+        )
         start_jmp = len(self.code)
+
 
         self.emit(
             OpCode.JMP,
@@ -75,6 +81,18 @@ class CodeGenerator:
         main_addr = len(self.code)
 
         self.code[start_jmp].arg = main_addr + self.start
+
+        for port, handle_addr in self.global_.items():
+            self.emit(
+                OpCode.LOAD,
+                AddrMode.DIRECT_LOAD,
+                handle_addr
+            )
+            self.emit(
+                OpCode.STR,
+                AddrMode.DIRECT,
+                port
+            )
 
         for decl in program.declarations:
             if not isinstance(decl, (FunctionNode, InterruptFunctionNode)):

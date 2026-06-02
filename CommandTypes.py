@@ -85,7 +85,7 @@ class Command:
         return string
 
     def __str__(self):
-        return str(self.toInt())
+        return self.toString()
 
     def toInt(self):
         return (((self.op_code.value << MagicNumber.OP_CODE_POS.value) + (self.addr_mode.value << MagicNumber.ADDR_POS.value) + self.arg)
@@ -99,3 +99,32 @@ class Command:
             hex_code += hex(byte)[2:].rjust(2, "0")
 
         return hex_code
+
+    def toBytes(self):
+        return self.toInt().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
+
+def decode(code):
+    op_code = OpCode(code >> 24)
+    addr_mode = AddrMode((code & 0x00F00000) >> 20)
+    arg = code & 0x000FFFFF
+
+    return Command(op_code, addr_mode, arg)
+
+def read_commands_from_file(filename):
+    code = []
+
+    with open(filename, "rb") as file:
+        data = file.read()
+
+        size = MagicNumber.WORD_LEN.value // 8
+
+        for i in range(0, len(data), size):
+            command_bytes = data[i: i + size]
+
+            command_int = int.from_bytes(command_bytes, "little", signed=True)
+
+            command = decode(command_int)
+
+            code.append(command)
+
+    return code
