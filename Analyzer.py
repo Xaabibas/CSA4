@@ -4,7 +4,7 @@ from AST import *
 
 
 def visit_number_node(node):
-    if -2**19 <= node.value <= 2**19 - 1:
+    if -(2**19) <= node.value <= 2**19 - 1:
         return
     raise Exception(f"Number {node.value} too large")
 
