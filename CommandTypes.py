@@ -13,7 +13,6 @@ class OpCode(Enum):
     OUT = 0x03
     PUSH = 0x04
     POP = 0x05
-    INC_SP = 0x0C
 
     EI = 0x06
     DI = 0x07
@@ -86,6 +85,9 @@ class Command:
 
     def __str__(self):
         return self.toString()
+
+    def __format__(self, format_spec):
+        return format(self.toInt(), format_spec)
 
     def toInt(self):
         return (((self.op_code.value << MagicNumber.OP_CODE_POS.value) + (self.addr_mode.value << MagicNumber.ADDR_POS.value) + self.arg)

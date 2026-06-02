@@ -14,8 +14,7 @@ from External import IOController
 class Machine:
     alu: ALU = ALU()
     memory: Memory
-    # io_controller: IOController = IOController()
-    io_controller: IOController = IOController([(1, 'h'), (10, 'e'), (20, 'l'), (25, 'l'), (100, 'o'), (102, '\n')])
+    io_controller: IOController = IOController()
     AC: int = 0
     BR: int | Command = 0
     PS: int = 0
@@ -137,7 +136,6 @@ class ControlUnit:
             OpCode.OUT: self.out,
             OpCode.PUSH: self.push,
             OpCode.POP: self.pop,
-            OpCode.INC_SP: self.inc_sp,
             OpCode.EI: self.enable_interrupt,
             OpCode.DI: self.disable_interrupt,
             OpCode.LOAD: self.load,
@@ -164,15 +162,19 @@ class ControlUnit:
         self.file = file
         self.instructions = []
 
+    def snapshot(self, info):
+        log = (f"Tick #{self.tick:^5} - " +
+               f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.IP:07}, AR: {self.machine.IP:07}" +
+               f"{"" if info == "" else "; " + info}")
+
+        return log
+
     def tick_(self, info=""):
         self.tick += 1
-        log = (f"Tick #{self.tick}; {info}"
-               f"AC: {self.machine.AC}, BR: {self.machine.BR}, PS:{self.machine.PS}, DR: {self.machine.DR}, CR:{self.machine.CR}, IP: {self.machine.IP}, SP: {self.machine.SP}; AR: {self.machine.AR}" +
-               # self.command_repr())
-               "")
+        log = self.snapshot(info)
         logging.debug(log)
-        print(log)
         self.file.write(log + "\n")
+
         if self.machine.PS & 0x20 or self.machine.io_controller.IREQ:
             return
         self.machine.io_controller.update(self.tick)
@@ -205,8 +207,10 @@ class ControlUnit:
         self.machine.load_right_zero()
         self.machine.alu.inc()
         self.machine.latch_ip()
+
         if isinstance(self.machine.CR, int):
             self.machine.CR = decode(self.machine.CR)
+
         self.tick_(info="INSTRUCTION FETCH; " + f"{self.machine.AR} - {self.machine.CR.toHexCode()} - {self.machine.CR.toString()}; ")
 
 
@@ -331,29 +335,6 @@ class ControlUnit:
         self.machine.write(self.tick_, self.now)
 
     def pop(self):
-        self.machine.load_sp()
-        self.machine.load_left_zero()
-        self.machine.alu.sum()
-        self.machine.latch_ar()
-        self.machine.latch_br()
-        self.tick_()
-
-        self.machine.load_br()
-        self.machine.load_right_zero()
-        self.machine.alu.inc()
-        self.machine.latch_sp()
-
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
-        self.machine.latch_dr()
-
-        self.machine.load_dr()
-        self.machine.load_left_zero()
-        self.machine.alu.sum()
-        self.machine.latch_ac()
-        self.tick_()
-
-    def inc_sp(self):
         self.machine.load_sp()
         self.machine.load_left_zero()
         self.machine.alu.inc()
@@ -685,6 +666,13 @@ class ControlUnit:
             self.memory.memory[addr + start] = command
         self.machine.IP = start
 
+    def load_memory(self, memory):
+        for addr, data in memory.items():
+            self.memory.memory[addr] = data
+
+    def load_input(self, input_tokens):
+        self.machine.io_controller = IOController(input_tokens)
+
     def run(self, limit: int = 2000):
         try:
             for _ in range(limit):
@@ -692,12 +680,17 @@ class ControlUnit:
             else:
                 raise Exception("Op limit")
         except SystemExit:
-            pass
+            print("Output buffer:", self.machine.io_controller.devices[1].buffer)
 
 if __name__ == "__main__":
 
-    _, source_file, input_file, debug_file = sys.argv
+    assert 4 <= len(sys.argv) <= 5, "Wrong argument count: python Machine.py <source_file> <memory_file> <debug_file> [<input_file>] "
 
+    if len(sys.argv) == 4:
+        _, source_file, memory_file, debug_file = sys.argv
+        input_file = None
+    else:
+        _, source_file, memory_file, debug_file, input_file = sys.argv
 
     code = read_commands_from_file(source_file)
 
@@ -705,5 +698,18 @@ if __name__ == "__main__":
         cu = ControlUnit(file)
 
         cu.load_code(code)
+
+        with open(memory_file, "r") as file:
+            memory_text = file.read()
+            memory = eval(memory_text)
+
+            cu.load_memory(memory)
+
+        if input_file is not None:
+            with open(input_file, "r") as file:
+                input_text = file.read()
+                input_tokens = eval(input_text)
+
+                cu.load_input(input_tokens)
 
         cu.run()

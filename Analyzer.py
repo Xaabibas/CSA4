@@ -55,7 +55,6 @@ class Analyzer:
             )
 
     def visitAssignNode(self, node):
-        print(node.name)
         if isinstance(node.name, ReadNode):
             self.visit(node.name)
         elif node.name not in self.variables:

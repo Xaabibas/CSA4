@@ -1,10 +1,12 @@
 class ExternalDevice:
     DR: int = 2
     SR: int = 0 # младший бит - бит готовности, второй младший бит - запрос прерывания
+    buffer: []
 
     schedule: [(int, str)]
 
     def __init__(self, schedule=None):
+        self.buffer = []
         self.schedule = schedule
 
     def read_data(self):
@@ -16,7 +18,7 @@ class ExternalDevice:
 
     def write_data(self, data: int):
         self.DR = data
-        self.request_interrupt()
+        self.buffer.append(chr(data))
 
     def request_interrupt(self):
         self.SR = self.SR | 0x00000003
@@ -30,8 +32,8 @@ class ExternalDevice:
 
         if now >= next_time:
             next_str = self.schedule.pop(0)[1]
-            self.write_data(ord(next_str))
-            print("written:", self.DR)
+            self.DR = ord(next_str)
+            self.request_interrupt()
 
 
 class IOController:
@@ -45,9 +47,6 @@ class IOController:
             input_schedule = [(1, '\n')]
         self.devices = {0: ExternalDevice(schedule=input_schedule),
                         1: ExternalDevice()}
-
-    def register(self, port: int, device: ExternalDevice):
-        self.devices[port] = device
 
     def in_(self, port: int, register: int): # if register == 0 then SR else DR
         self.buffer = self.devices[port].read_status() if register == 0 else self.devices[port].read_data()

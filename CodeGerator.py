@@ -9,8 +9,8 @@ class CodeGenerator:
 
         self.variables = {}
         self.functions = {}
-        self.global_ = {}
         self.locals = {}
+        self.memory = {}
 
         self.local_count = 0
 
@@ -49,7 +49,7 @@ class CodeGenerator:
             elif isinstance(decl, FunctionNode):
                 self.functions[decl.name] = None
             elif isinstance(decl, InterruptFunctionNode):
-                self.global_[decl.port] = None
+                self.memory[decl.port] = None
 
     def emit(self, op_code, addr_mode, arg):
         self.code.append(Command(op_code, addr_mode, arg))
@@ -81,18 +81,6 @@ class CodeGenerator:
         main_addr = len(self.code)
 
         self.code[start_jmp].arg = main_addr + self.start
-
-        for port, handle_addr in self.global_.items():
-            self.emit(
-                OpCode.LOAD,
-                AddrMode.DIRECT_LOAD,
-                handle_addr
-            )
-            self.emit(
-                OpCode.STR,
-                AddrMode.DIRECT,
-                port
-            )
 
         for decl in program.declarations:
             if not isinstance(decl, (FunctionNode, InterruptFunctionNode)):
@@ -183,29 +171,33 @@ class CodeGenerator:
         elif isinstance(node, StringNode):
             length = len(node.value)
 
-            self.emit(
-                OpCode.LOAD,
-                AddrMode.DIRECT_LOAD,
-                length
-            )
-            self.emit(
-                OpCode.STR,
-                AddrMode.DIRECT,
-                self.string_addr
-            )
+            self.memory[self.string_addr] = length
             self.string_addr += 1
 
+            # self.emit(
+            #     OpCode.LOAD,
+            #     AddrMode.DIRECT_LOAD,
+            #     length
+            # )
+            # self.emit(
+            #     OpCode.STR,
+            #     AddrMode.DIRECT,
+            #     self.string_addr
+            # )
+            # self.string_addr += 1
+
             for c in node.value:
-                self.emit(
-                    OpCode.LOAD,
-                    AddrMode.DIRECT_LOAD,
-                    ord(c)
-                )
-                self.emit(
-                    OpCode.STR,
-                    AddrMode.DIRECT,
-                    self.string_addr
-                )
+                # self.emit(
+                #     OpCode.LOAD,
+                #     AddrMode.DIRECT_LOAD,
+                #     ord(c)
+                # )
+                # self.emit(
+                #     OpCode.STR,
+                #     AddrMode.DIRECT,
+                #     self.string_addr
+                # )
+                self.memory[self.string_addr] = ord(c)
                 self.string_addr += 1
 
             self.emit(
@@ -375,7 +367,7 @@ class CodeGenerator:
 
         for _ in node.args:
             self.emit(
-                OpCode.INC_SP,
+                OpCode.POP,
                 AddrMode.DIRECT,
                 0
             )
@@ -387,7 +379,7 @@ class CodeGenerator:
             self.generate_expression(node.value)
         for i in range(self.local_count):
             self.emit(
-                OpCode.INC_SP,
+                OpCode.POP,
                 AddrMode.DIRECT,
                 0
             )
@@ -399,7 +391,7 @@ class CodeGenerator:
         )
 
     def visitInterruptFunctionNode(self, node):
-        self.global_[node.port] = len(self.code) + self.start
+        self.memory[node.port] = len(self.code) + self.start
 
         self.locals = {}
         self.local_count = 0
@@ -409,7 +401,7 @@ class CodeGenerator:
 
         for i in range(self.local_count):
             self.emit(
-                OpCode.INC_SP,
+                OpCode.POP,
                 AddrMode.DIRECT,
                 0
             )
@@ -435,7 +427,7 @@ class CodeGenerator:
         if self.code[-1].op_code != OpCode.RET:
             for i in range(self.local_count):
                 self.emit(
-                    OpCode.INC_SP,
+                    OpCode.POP,
                     AddrMode.DIRECT,
                     0
                 )
