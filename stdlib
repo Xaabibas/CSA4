@@ -1,6 +1,6 @@
 !$;
 
-var buffer = "________________";
+var buffer = "________________________________________________________________________________________________________________________________";
 var len = 0;
 var ready_flag = 0;
 
@@ -27,15 +27,15 @@ func input_string() {
 }
 
 func print_int(c) {
-    % c;
+    # c;
 }
 
 func print_string(s) {
     var len_ = &(s);
-    var i = 1;
-    while (i <= len) {
-        print_int(&(s + i));
-        i = i + 1;
+    var k = 1;
+    while (k <= len_) {
+        print_int(&(s + k));
+        k = k + 1;
     }
 }
 

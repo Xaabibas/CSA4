@@ -1,10 +1,11 @@
-from typing import Callable
+from collections.abc import Callable
 
 from CommandTypes import Command
 from MagicNumber import MagicNumber
 
+
 class CacheLine:
-    data: int
+    data: Command | int
     timestamp: int
 
     def __init__(self, data=0, timestamp=0):
@@ -12,7 +13,7 @@ class CacheLine:
         self.timestamp = timestamp
 
 class Cache:
-    lines: {int: CacheLine}
+    lines: dict[int, CacheLine]
 
     def __init__(self):
         self.lines = {}
@@ -25,7 +26,7 @@ class Cache:
 
 
 class Memory:
-    memory: {int: Command | int}
+    memory: dict[int, Command | int]
     cache: Cache
 
     def __init__(self):

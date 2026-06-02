@@ -1,12 +1,14 @@
+
+
 class ExternalDevice:
     DR: int = 2
     SR: int = 0 # младший бит - бит готовности, второй младший бит - запрос прерывания
-    buffer: []
-
-    schedule: [(int, str)]
+    buffer_str: list[str]
+    buffer_int: list[int]
 
     def __init__(self, schedule=None):
-        self.buffer = []
+        self.buffer_str = []
+        self.buffer_int = []
         self.schedule = schedule
 
     def read_data(self):
@@ -18,12 +20,16 @@ class ExternalDevice:
 
     def write_data(self, data: int):
         self.DR = data
-        self.buffer.append(chr(data))
+        try:
+            self.buffer_str.append(chr(data))
+        except Exception:
+            self.buffer_str.append("not-char")
+        self.buffer_int.append(data)
 
     def request_interrupt(self):
         self.SR = self.SR | 0x00000003
 
-    def update(self, now):
+    def update(self, now: int):
         if self.schedule is None or len(self.schedule) == 0:
             return
         if self.SR & 0x2:
@@ -32,19 +38,22 @@ class ExternalDevice:
 
         if now >= next_time:
             next_str = self.schedule.pop(0)[1]
-            self.DR = ord(next_str)
+            if isinstance(next_str, int):
+                self.DR = next_str
+            else:
+                self.DR = ord(next_str)
             self.request_interrupt()
 
 
 class IOController:
-    devices: {int: ExternalDevice}
+    devices: dict[int, ExternalDevice]
     buffer: int
     IREQ: bool = False
     IPort: int = 0
 
     def __init__(self, input_schedule=None):
         if input_schedule is None:
-            input_schedule = [(1, '\n')]
+            input_schedule = [(1, "\n")]
         self.devices = {0: ExternalDevice(schedule=input_schedule),
                         1: ExternalDevice()}
 

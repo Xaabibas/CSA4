@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
+
 class TokenType(Enum):
     VAR = "var"
     FUNC = "func"
@@ -20,6 +21,9 @@ class TokenType(Enum):
     PLUS = "+"
     MINUS = "-"
     MUL = "*"
+    ADC = "+*"
+    DIV = "/"
+    MOD = "%"
 
     ASSIGN = "="
 
@@ -42,7 +46,7 @@ class TokenType(Enum):
     SEMICOLON = ";"
 
     IN = "@"
-    OUT = "%"
+    OUT = "#"
     READ = "&"
     EI = "$"
     DI = "!$"
@@ -66,6 +70,9 @@ OPERATORS = {
     "-": TokenType.MINUS,
     "*": TokenType.MUL,
     "=": TokenType.ASSIGN,
+    "+*": TokenType.ADC,
+    "/": TokenType.DIV,
+    "%": TokenType.MOD,
 
     "(": TokenType.LBRACKET,
     ")": TokenType.RBRACKET,
@@ -83,7 +90,7 @@ OPERATORS = {
     ">=": TokenType.GE,
 
     "@": TokenType.IN,
-    "%": TokenType.OUT,
+    "#": TokenType.OUT,
     "&": TokenType.READ,
     "!$": TokenType.DI,
     "$": TokenType.EI
@@ -138,7 +145,7 @@ class Lexer:
     def read_string(self):
         self.advance()
         value = ""
-        while self.current() != "\"":
+        while self.current() != '"':
             if self.current() is None:
                 raise SyntaxError("Unterminated string")
             value += self.current()
@@ -158,7 +165,7 @@ class Lexer:
         if self.current() == "\\":
             self.advance()
             if self.current() == "n":
-                value = '\n'
+                value = "\n"
             else:
                 raise SyntaxError("Bad char")
 
@@ -178,7 +185,7 @@ class Lexer:
     def read_operator(self):
         c = self.current()
 
-        if c in "<>!=":
+        if c in "<>!=+":
             self.advance()
 
             if self.current() == "=":
@@ -187,6 +194,10 @@ class Lexer:
                 return Token(OPERATORS[op], op, self.line)
             if self.current() == "$":
                 op = c + "$"
+                self.advance()
+                return Token(OPERATORS[op], op, self.line)
+            if self.current() == "*":
+                op = c + "*"
                 self.advance()
                 return Token(OPERATORS[op], op, self.line)
             if c == "!":
@@ -217,14 +228,14 @@ class Lexer:
                 tokens.append(self.read_identifier())
                 continue
 
-            if c == "\"":
+            if c == '"':
                 tokens.append(self.read_string())
                 continue
 
             if c =="'":
                 tokens.append(self.read_char())
                 continue
-            if c in "=+-*<>,;(){}!@%&$":
+            if c in "=+-*<>,;(){}!@#&$/%":
                 tokens.append(self.read_operator())
                 continue
 

@@ -1,19 +1,15 @@
+import logging
 import sys
 from collections.abc import Callable
-from io import TextIOWrapper
 
-from CommandTypes import AddrMode, OpCode, Command, decode, read_commands_from_file
-import logging
 from ALU import ALU
-from CommandTypes import Command
+from CommandTypes import AddrMode, Command, OpCode, decode, read_commands_from_file
+from External import IOController
 from MagicNumber import MagicNumber
 from Memory import Memory
-from External import IOController
 
 
 class Machine:
-    alu: ALU = ALU()
-    memory: Memory
     io_controller: IOController = IOController()
     AC: int = 0
     BR: int | Command = 0
@@ -28,6 +24,7 @@ class Machine:
     DR_selector: bool = True # True - alu; False - memory
 
     def __init__(self, memory):
+        self.alu = ALU()
         self.memory = memory
 
     def load_ac(self):
@@ -68,8 +65,8 @@ class Machine:
         self.PS = self.alu.out & (2 ** MagicNumber.PS_LEN.value - 1)
 
     def latch_ps_flags(self):
-        NZVC = (self.alu.N << 3) | (self.alu.Z << 2) | (self.alu.V << 1) | self.alu.C
-        self.PS = (self.PS & 0x30) | NZVC
+        nzvc = (self.alu.N << 3) | (self.alu.Z << 2) | (self.alu.V << 1) | self.alu.C
+        self.PS = (self.PS & 0x30) | nzvc
 
     def ei(self):
         self.PS = self.PS | 0x10
@@ -114,13 +111,9 @@ class Machine:
         self.BR = self.io_controller.IPort
 
 class ControlUnit:
-    machine: Machine
-    memory: Memory = Memory()
-    tick: int = 0
-    file: TextIOWrapper
-    instructions: []
-
     def __init__(self, file):
+        self.tick = 0
+        self.memory = Memory()
         self.machine = Machine(self.memory)
         self.address_fetch = {
             AddrMode.DIRECT: self.direct_addr,
@@ -146,6 +139,9 @@ class ControlUnit:
             OpCode.ADD: self.add,
             OpCode.SUB: self.sub,
             OpCode.MUL: self.mul,
+            OpCode.ADC: self.adc,
+            OpCode.DIV: self.div,
+            OpCode.MOD: self.mod,
             OpCode.AND: self.and_,
             OpCode.OR: self.or_,
             OpCode.NEG: self.neg,
@@ -163,11 +159,9 @@ class ControlUnit:
         self.instructions = []
 
     def snapshot(self, info):
-        log = (f"Tick #{self.tick:^5} - " +
+        return (f"Tick #{self.tick:^5} - " +
                f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.IP:07}, AR: {self.machine.IP:07}" +
                f"{"" if info == "" else "; " + info}")
-
-        return log
 
     def tick_(self, info=""):
         self.tick += 1
@@ -183,8 +177,8 @@ class ControlUnit:
         if isinstance(self.machine.CR, Command):
             return (
                 f"{self.machine.AR} - "
-                f"{self.machine.CR.toHexCode()} - "
-                f"{self.machine.CR.toString()}"
+                f"{self.machine.CR.to_hex_code()} - "
+                f"{self.machine.CR.to_string()}"
             )
 
         return "0"
@@ -211,10 +205,10 @@ class ControlUnit:
         if isinstance(self.machine.CR, int):
             self.machine.CR = decode(self.machine.CR)
 
-        self.tick_(info="INSTRUCTION FETCH; " + f"{self.machine.AR} - {self.machine.CR.toHexCode()} - {self.machine.CR.toString()}; ")
+        self.tick_(info="INSTRUCTION FETCH; " + f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}; ")
 
 
-        self.instructions.append(f"{self.machine.AR} - {self.machine.CR.toHexCode()} - {self.machine.CR.toString()}")
+        self.instructions.append(f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}")
 
     def operand_fetch_stage(self):
 
@@ -354,7 +348,6 @@ class ControlUnit:
         self.machine.load_left_zero()
         self.machine.alu.sum()
         self.machine.latch_ac()
-        self.machine.latch_ps_flags()
         self.tick_()
 
     def store(self):
@@ -482,6 +475,30 @@ class ControlUnit:
         self.machine.load_ac()
         self.machine.load_dr()
         self.machine.alu.mul()
+        self.machine.latch_ac()
+        self.machine.latch_ps_flags()
+        self.tick_()
+
+    def div(self):
+        self.machine.load_ac()
+        self.machine.load_dr()
+        self.machine.alu.div()
+        self.machine.latch_ac()
+        self.machine.latch_ps_flags()
+        self.tick_()
+
+    def mod(self):
+        self.machine.load_ac()
+        self.machine.load_dr()
+        self.machine.alu.mod()
+        self.machine.latch_ac()
+        self.machine.latch_ps_flags()
+        self.tick_()
+
+    def adc(self):
+        self.machine.load_ac()
+        self.machine.load_dr()
+        self.machine.alu.adc(self.machine.PS & 0x1)
         self.machine.latch_ac()
         self.machine.latch_ps_flags()
         self.tick_()
@@ -673,14 +690,18 @@ class ControlUnit:
     def load_input(self, input_tokens):
         self.machine.io_controller = IOController(input_tokens)
 
-    def run(self, limit: int = 2000):
+    def run(self, limit: int = 200000):
+        cnt = 0
         try:
-            for _ in range(limit):
+            for i in range(limit):
+                cnt = i
                 self.cycle()
             else:
                 raise Exception("Op limit")
         except SystemExit:
-            print("Output buffer:", self.machine.io_controller.devices[1].buffer)
+            print("Executed instructions:", cnt)
+            print("Output buffer (str):", self.machine.io_controller.devices[1].buffer_str)
+            print("Output buffer (int):", self.machine.io_controller.devices[1].buffer_int)
 
 if __name__ == "__main__":
 
@@ -694,19 +715,19 @@ if __name__ == "__main__":
 
     code = read_commands_from_file(source_file)
 
-    with open(debug_file, "w") as file:
-        cu = ControlUnit(file)
+    with open(debug_file, "w", encoding="utf-8") as debug:
+        cu = ControlUnit(debug)
 
         cu.load_code(code)
 
-        with open(memory_file, "r") as file:
+        with open(memory_file, encoding="utf-8") as file:
             memory_text = file.read()
             memory = eval(memory_text)
 
             cu.load_memory(memory)
 
         if input_file is not None:
-            with open(input_file, "r") as file:
+            with open(input_file, encoding="utf-8") as file:
                 input_text = file.read()
                 input_tokens = eval(input_text)
 

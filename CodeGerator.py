@@ -1,5 +1,5 @@
 from AST import *
-from CommandTypes import Command, OpCode, AddrMode
+from CommandTypes import AddrMode, Command, OpCode
 
 
 class CodeGenerator:
@@ -20,25 +20,25 @@ class CodeGenerator:
         self.start = start
 
         self.visits = {
-            ProgramNode: self.visitProgramNode,
-            VarDeclNode: self.visitVarDeclNode,
-            AssignNode: self.visitAssignNode,
-            ConditionNode: self.visitConditionNode,
-            IfNode: self.visitIfNode,
-            WhileNode: self.visitWhileNode,
-            FunctionNode: self.visitFunctionNode,
-            FunctionCallNode: self.visitFunctionCallNode,
-            ReturnNode: self.visitReturnNode,
-            InterruptFunctionNode: self.visitInterruptFunctionNode,
-            InNode: self.visitInNode,
-            OutNode: self.visitOutNode,
-            ReadNode: self.visitReadNode,
-            DINode: self.visitDINode,
-            EINode: self.visitEINode
+            ProgramNode: self.visit_program_node,
+            VarDeclNode: self.visit_var_decl_node,
+            AssignNode: self.visit_assign_node,
+            ConditionNode: self.visit_condition_node,
+            IfNode: self.visit_if_node,
+            WhileNode: self.visit_while_node,
+            FunctionNode: self.visit_function_node,
+            FunctionCallNode: self.visit_function_call_node,
+            ReturnNode: self.visit_return_node,
+            InterruptFunctionNode: self.visit_interrupt_function_node,
+            InNode: self.visit_in_node,
+            OutNode: self.visit_out_node,
+            ReadNode: self.visit_read_node,
+            DINode: self.visit_di_node,
+            EINode: self.visit_ei_node
         }
 
     def generate(self, program):
-        self.visitProgramNode(program)
+        self.visit_program_node(program)
 
     def collect_symbols(self, program):
         for decl in program.declarations:
@@ -57,7 +57,7 @@ class CodeGenerator:
     def visit(self, node):
         self.visits[type(node)](node)
 
-    def visitProgramNode(self, program):
+    def visit_program_node(self, program):
         self.collect_symbols(program)
 
         self.emit(
@@ -92,10 +92,10 @@ class CodeGenerator:
             0
         )
 
-    def visitVarDeclNode(self, node):
-        if node.name not in self.variables:
+    def visit_var_decl_node(self, node):
+        if node.name not in self.variables and node.name not in self.locals:
             self.locals[node.name] = self.local_count + 1
-        if node.value is None:
+        if node.value is None and node.name not in self.locals:
             self.local_count += 1
             return
 
@@ -152,6 +152,12 @@ class CodeGenerator:
                 op_code = OpCode.ADD
             elif node.op == "-":
                 op_code = OpCode.SUB
+            elif node.op == "+*":
+                op_code = OpCode.ADC
+            elif node.op == "/":
+                op_code = OpCode.DIV
+            elif node.op == "%":
+                op_code = OpCode.MOD
             else:
                 op_code = OpCode.MUL
 
@@ -174,29 +180,7 @@ class CodeGenerator:
             self.memory[self.string_addr] = length
             self.string_addr += 1
 
-            # self.emit(
-            #     OpCode.LOAD,
-            #     AddrMode.DIRECT_LOAD,
-            #     length
-            # )
-            # self.emit(
-            #     OpCode.STR,
-            #     AddrMode.DIRECT,
-            #     self.string_addr
-            # )
-            # self.string_addr += 1
-
             for c in node.value:
-                # self.emit(
-                #     OpCode.LOAD,
-                #     AddrMode.DIRECT_LOAD,
-                #     ord(c)
-                # )
-                # self.emit(
-                #     OpCode.STR,
-                #     AddrMode.DIRECT,
-                #     self.string_addr
-                # )
                 self.memory[self.string_addr] = ord(c)
                 self.string_addr += 1
 
@@ -209,7 +193,7 @@ class CodeGenerator:
         else:
             self.visit(node)
 
-    def visitAssignNode(self, node):
+    def visit_assign_node(self, node):
         if isinstance(node.name, ReadNode):
             self.generate_expression(node.name.value)
             self.emit(
@@ -241,7 +225,7 @@ class CodeGenerator:
             self.variables[node.name]
         )
 
-    def visitConditionNode(self, condition):
+    def visit_condition_node(self, condition):
         tmp = self.tmp_addr
         self.tmp_addr += 1
 
@@ -307,13 +291,25 @@ class CodeGenerator:
                 0
             )
 
-    def visitIfNode(self, node):
+    def visit_if_node(self, node):
         self.visit(node.condition)
 
         then_pos = len(self.code) - 1
 
+        old_locals = self.locals.copy()
+        old_count = self.local_count
+
         for stmt in node.then_block:
             self.visit(stmt)
+        for _ in range(self.local_count - old_count):
+            self.emit(
+                OpCode.POP,
+                AddrMode.DIRECT,
+                0
+            )
+
+        self.locals = old_locals
+        self.local_count = old_count
 
         if node.else_block:
             else_pos = len(self.code)
@@ -324,22 +320,47 @@ class CodeGenerator:
             )
             self.code[then_pos].arg = len(self.code) + self.start
 
+            old_locals = self.locals.copy()
+            old_count = self.local_count
+
             for stmt in node.else_block:
                 self.visit(stmt)
+            for _ in range(self.local_count - old_count):
+                self.emit(
+                    OpCode.POP,
+                    AddrMode.DIRECT,
+                    0
+                )
+
+            self.locals = old_locals
+            self.local_count = old_count
             self.code[else_pos].arg = len(self.code) + self.start
             return
 
         self.code[then_pos].arg = len(self.code) + self.start
 
-    def visitWhileNode(self, node):
+    def visit_while_node(self, node):
         loop_start = len(self.code) + self.start
 
         self.visit(node.condition)
 
         break_pos = len(self.code) - 1
 
+        old_locals = self.locals.copy()
+        old_count = self.local_count
+
         for stmt in node.body:
             self.visit(stmt)
+
+        for _ in range(self.local_count - old_count):
+            self.emit(
+                OpCode.POP,
+                AddrMode.DIRECT,
+                0
+            )
+
+        self.locals = old_locals
+        self.local_count = old_count
 
         self.emit(
             OpCode.JMP,
@@ -349,7 +370,7 @@ class CodeGenerator:
 
         self.code[break_pos].arg = len(self.code) + self.start
 
-    def visitFunctionCallNode(self, node):
+    def visit_function_call_node(self, node):
         for arg in reversed(node.args):
             self.generate_expression(arg)
             self.emit(
@@ -374,7 +395,7 @@ class CodeGenerator:
 
         return call_pos
 
-    def visitReturnNode(self, node):
+    def visit_return_node(self, node):
         if node.value:
             self.generate_expression(node.value)
         for i in range(self.local_count):
@@ -390,7 +411,7 @@ class CodeGenerator:
             0
         )
 
-    def visitInterruptFunctionNode(self, node):
+    def visit_interrupt_function_node(self, node):
         self.memory[node.port] = len(self.code) + self.start
 
         self.locals = {}
@@ -412,7 +433,7 @@ class CodeGenerator:
             0
         )
 
-    def visitFunctionNode(self, node):
+    def visit_function_node(self, node):
         self.functions[node.name] = len(self.code) + self.start
 
         self.locals = {}
@@ -437,14 +458,14 @@ class CodeGenerator:
                 0
             )
 
-    def visitInNode(self, node):
+    def visit_in_node(self, node):
         self.emit(
             OpCode.IN,
             AddrMode.DIRECT_LOAD,
             0
         )
 
-    def visitOutNode(self, node):
+    def visit_out_node(self, node):
         self.generate_expression(node.value)
         self.emit(
             OpCode.OUT,
@@ -452,7 +473,7 @@ class CodeGenerator:
             1
         )
 
-    def visitReadNode(self, node):
+    def visit_read_node(self, node):
         self.generate_expression(node.value)
 
         self.emit(
@@ -467,14 +488,14 @@ class CodeGenerator:
             self.tmp_addr
         )
 
-    def visitEINode(self, node):
+    def visit_ei_node(self, node):
         self.emit(
             OpCode.EI,
             AddrMode.DIRECT,
             0
         )
 
-    def visitDINode(self, node):
+    def visit_di_node(self, node):
         self.emit(
             OpCode.DI,
             AddrMode.DIRECT,

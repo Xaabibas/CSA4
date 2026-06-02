@@ -1,4 +1,4 @@
-from Lexer import TokenType, Token
+from Lexer import TokenType
 
 
 class Node:
@@ -384,7 +384,8 @@ class Parser:
 
         while self.current().type in (
             TokenType.PLUS,
-            TokenType.MINUS
+            TokenType.MINUS,
+            TokenType.ADC
         ):
             op = self.current().value
             self.advance()
@@ -402,7 +403,7 @@ class Parser:
     def parse_term(self):
         node = self.parse_factor()
 
-        while self.current().type == TokenType.MUL:
+        while self.current().type in (TokenType.MUL, TokenType.DIV, TokenType.MOD):
             op = self.current().value
             self.advance()
 

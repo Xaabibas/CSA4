@@ -33,6 +33,9 @@ class OpCode(Enum):
     ADD = 0x40
     SUB = 0x41
     MUL = 0x42
+    ADC = 0x43
+    DIV = 0x44
+    MOD = 0x45
 
     AND = 0x50
     OR = 0x51
@@ -68,7 +71,7 @@ class Command:
         self.addr_mode = addr_mode
         self.arg = arg
 
-    def toString(self):
+    def to_string(self):
         string = self.op_code.name
         if self.op_code.value & 0xF0 != 0:
             if self.addr_mode == AddrMode.DIRECT:
@@ -84,17 +87,17 @@ class Command:
         return string
 
     def __str__(self):
-        return self.toString()
+        return self.to_string()
 
     def __format__(self, format_spec):
-        return format(self.toInt(), format_spec)
+        return format(self.to_int(), format_spec)
 
-    def toInt(self):
+    def to_int(self):
         return (((self.op_code.value << MagicNumber.OP_CODE_POS.value) + (self.addr_mode.value << MagicNumber.ADDR_POS.value) + self.arg)
                 & (2 ** MagicNumber.WORD_LEN.value - 1))
 
-    def toHexCode(self):
-        command_bytes = self.toInt().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
+    def to_hex_code(self):
+        command_bytes = self.to_int().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
 
         hex_code = "0x"
         for byte in reversed(command_bytes):
@@ -102,12 +105,15 @@ class Command:
 
         return hex_code
 
-    def toBytes(self):
-        return self.toInt().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
+    def to_bytes(self):
+        return self.to_int().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
 
 def decode(code):
     op_code = OpCode(code >> 24)
-    addr_mode = AddrMode((code & 0x00F00000) >> 20)
+    try:
+        addr_mode = AddrMode((code & 0x00F00000) >> 20)
+    except Exception:
+        addr_mode = AddrMode.DIRECT
     arg = code & 0x000FFFFF
 
     return Command(op_code, addr_mode, arg)

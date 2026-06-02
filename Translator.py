@@ -1,9 +1,9 @@
 import sys
 
-from Lexer import Lexer
 from Analyzer import Analyzer
 from AST import Parser
 from CodeGerator import CodeGenerator
+from Lexer import Lexer
 from MagicNumber import MagicNumber
 
 
@@ -45,7 +45,7 @@ class Translator:
 
                 file.write("CODE:\n")
                 for i, c in enumerate(code):
-                    file.write(f" {i + MagicNumber.START_IP.value:07} - {c.toHexCode()} - {c}\n")
+                    file.write(f" {i + MagicNumber.START_IP.value:07} - {c.to_hex_code()} - {c}\n")
 
                 file.write("DATA:\n")
                 for i, d in memory.items():
@@ -57,7 +57,7 @@ class Translator:
     def generate_binary_file(self, code):
         with open(self.dest_file, "wb") as file:
             for c in code:
-                file.write(c.toBytes())
+                file.write(c.to_bytes())
 
     def generate_memory_file(self, memory):
         with open(self.memory_file, "w") as file:

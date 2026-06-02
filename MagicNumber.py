@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class MagicNumber(Enum):
     WORD_LEN = 32
     ADDR_LEN = 20
