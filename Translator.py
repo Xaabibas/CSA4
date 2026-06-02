@@ -44,7 +44,7 @@ class Translator:
             with open(self.debug_file, "w") as file:
                 file.write("CODE:\n")
                 for i, c in enumerate(code):
-                    file.write(f" {i + MagicNumber.START_IP.value:07} - {c.to_hex_code()} - {c}\n")
+                    file.write(f" {i + MagicNumber.START_IP.value:07} - {c.to_hex_code()} - {c.to_string()}\n")
 
                 file.write("DATA:\n")
                 for i, d in memory.items():

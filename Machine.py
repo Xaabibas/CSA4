@@ -159,7 +159,7 @@ class ControlUnit:
     def snapshot(self, info):
         return (
             f"Tick #{self.tick:^5} - "
-            + f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.IP:07}, AR: {self.machine.IP:07}"
+            + f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.SP:07}, AR: {self.machine.IP:07}"
             + f"{'' if info == '' else '; ' + info}"
         )
 
