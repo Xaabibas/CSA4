@@ -42,7 +42,6 @@ class Translator:
 
         if self.debug_file is not None:
             with open(self.debug_file, "w") as file:
-
                 file.write("CODE:\n")
                 for i, c in enumerate(code):
                     file.write(f" {i + MagicNumber.START_IP.value:07} - {c.to_hex_code()} - {c}\n")
@@ -65,7 +64,9 @@ class Translator:
 
 
 if __name__ == "__main__":
-    assert 4 <= len(sys.argv) <= 5, "Wrong argument count: python Translator.py <source_file> <dest_file> <memory_file> [<debug_file>] "
+    assert 4 <= len(sys.argv) <= 5, (
+        "Wrong argument count: python Translator.py <source_file> <dest_file> <memory_file> [<debug_file>] "
+    )
 
     if len(sys.argv) == 4:
         _, source_file, dest_file, memory_file = sys.argv

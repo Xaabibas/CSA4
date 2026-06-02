@@ -22,7 +22,7 @@ class Analyzer:
             FunctionNode: self.visit_function_node,
             BinaryOpNode: self.visit_bin_op_node,
             InterruptFunctionNode: self.visit_interrupt_function_node,
-            FunctionCallNode: self.visit_function_call_node
+            FunctionCallNode: self.visit_function_call_node,
         }
 
     def analyze(self, program: ProgramNode):
@@ -33,36 +33,28 @@ class Analyzer:
             return
         self.visits[type(node)](node)
 
-
     def visit_program_node(self, program: ProgramNode):
         for node in program.declarations:
             self.visit(node)
 
     def visit_var_decl_node(self, node):
         if node.name in self.variables:
-            raise Exception(
-                f"Variable '{node.name}' already declared"
-            )
+            raise Exception(f"Variable '{node.name}' already declared")
 
         self.variables[node.name] = True
 
         if node.value:
             self.visit(node.value)
 
-
     def visit_identifier_node(self, node):
         if node.name not in self.variables:
-            raise Exception(
-                f"Undefined variable '{node.name}'"
-            )
+            raise Exception(f"Undefined variable '{node.name}'")
 
     def visit_assign_node(self, node):
         if isinstance(node.name, ReadNode):
             self.visit(node.name)
         elif node.name not in self.variables:
-            raise Exception(
-                f"Undefined variable '{node.name}'"
-            )
+            raise Exception(f"Undefined variable '{node.name}'")
 
         self.visit(node.value)
 
@@ -105,9 +97,7 @@ class Analyzer:
 
     def visit_function_node(self, node):
         if node.name in self.functions:
-            raise Exception(
-                f"Function '{node.name}' already declared"
-            )
+            raise Exception(f"Function '{node.name}' already declared")
 
         self.functions[node.name] = len(node.params)
 
@@ -123,18 +113,13 @@ class Analyzer:
 
     def visit_function_call_node(self, node):
         if node.name not in self.functions:
-            raise Exception(
-                f"Undefined function '{node.name}'"
-            )
+            raise Exception(f"Undefined function '{node.name}'")
 
         expected = self.functions[node.name]
         actual = len(node.args)
 
         if expected != actual:
-            raise Exception(
-                f"Function '{node.name}' expects "
-                f"{expected} arguments, got {actual}"
-            )
+            raise Exception(f"Function '{node.name}' expects {expected} arguments, got {actual}")
 
         for arg in node.args:
             self.visit(arg)

@@ -53,16 +53,15 @@ class TokenType(Enum):
 
     EOF = "EOF"
 
+
 KEYWORDS = {
     "var": TokenType.VAR,
     "func": TokenType.FUNC,
     "ifunc": TokenType.IFUNC,
-
     "if": TokenType.IF,
     "else": TokenType.ELSE,
     "while": TokenType.WHILE,
-
-    "return": TokenType.RETURN
+    "return": TokenType.RETURN,
 }
 
 OPERATORS = {
@@ -73,34 +72,32 @@ OPERATORS = {
     "+*": TokenType.ADC,
     "/": TokenType.DIV,
     "%": TokenType.MOD,
-
     "(": TokenType.LBRACKET,
     ")": TokenType.RBRACKET,
     "{": TokenType.LFIG,
     "}": TokenType.RFIG,
-
     ",": TokenType.COMMA,
     ";": TokenType.SEMICOLON,
-
     "==": TokenType.EQ,
     "!=": TokenType.NE,
     "<": TokenType.LT,
     "<=": TokenType.LE,
     ">": TokenType.GR,
     ">=": TokenType.GE,
-
     "@": TokenType.IN,
     "#": TokenType.OUT,
     "&": TokenType.READ,
     "!$": TokenType.DI,
-    "$": TokenType.EI
+    "$": TokenType.EI,
 }
+
 
 @dataclass
 class Token:
     type: TokenType
     value: str | int | None
     line: int
+
 
 class Lexer:
     source: str
@@ -176,11 +173,7 @@ class Lexer:
 
         self.advance()
 
-        return Token(
-            TokenType.CHAR,
-            value,
-            self.line
-        )
+        return Token(TokenType.CHAR, value, self.line)
 
     def read_operator(self):
         c = self.current()
@@ -232,7 +225,7 @@ class Lexer:
                 tokens.append(self.read_string())
                 continue
 
-            if c =="'":
+            if c == "'":
                 tokens.append(self.read_char())
                 continue
             if c in "=+-*<>,;(){}!@#&$/%":

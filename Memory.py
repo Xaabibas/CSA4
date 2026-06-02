@@ -12,6 +12,7 @@ class CacheLine:
         self.data = data
         self.timestamp = timestamp
 
+
 class Cache:
     lines: dict[int, CacheLine]
 
@@ -48,13 +49,9 @@ class Memory:
 
         value = self.memory.get(addr, 0)
         if MagicNumber.CACHE_LINES_COUNT.value != 0:
-            self.cache.lines[addr] = CacheLine(
-                data=value,
-                timestamp=now()
-            )
+            self.cache.lines[addr] = CacheLine(data=value, timestamp=now())
 
         return value
-
 
     def write(self, addr: int, value: Command | int, tick_callback, now: Callable):
         self.memory[addr] = value
@@ -72,7 +69,4 @@ class Memory:
             del self.cache.lines[victim]
 
         if MagicNumber.CACHE_LINES_COUNT.value != 0:
-            self.cache.lines[addr] = CacheLine(
-                data=value,
-                timestamp=now()
-            )
+            self.cache.lines[addr] = CacheLine(data=value, timestamp=now())

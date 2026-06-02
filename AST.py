@@ -4,31 +4,38 @@ from Lexer import TokenType
 class Node:
     pass
 
+
 class NumberNode(Node):
     def __init__(self, value):
         self.value = value
+
 
 class StringNode(Node):
     def __init__(self, value):
         self.value = value
 
+
 class CharNode(Node):
     def __init__(self, value):
         self.value = value
 
+
 class IdentifierNode(Node):
     def __init__(self, name):
         self.name = name
+
 
 class VarDeclNode(Node):
     def __init__(self, name, value=None):
         self.name = name
         self.value = value
 
+
 class AssignNode(Node):
     def __init__(self, name, value):
         self.name = name
         self.value = value
+
 
 class ConditionNode(Node):
     def __init__(self, left, op, right):
@@ -36,20 +43,24 @@ class ConditionNode(Node):
         self.op = op
         self.right = right
 
+
 class IfNode(Node):
     def __init__(self, condition, then_block, else_block=None):
         self.condition = condition
         self.then_block = then_block
         self.else_block = else_block
 
+
 class WhileNode(Node):
     def __init__(self, condition, body):
         self.condition = condition
         self.body = body
 
+
 class ReturnNode(Node):
     def __init__(self, value=None):
         self.value = value
+
 
 class FunctionCallNode(Node):
     def __init__(self, name, args):
@@ -63,14 +74,17 @@ class FunctionNode(Node):
         self.params = params
         self.body = body
 
+
 class InterruptFunctionNode(Node):
     def __init__(self, port, body):
         self.port = port
         self.body = body
 
+
 class ProgramNode(Node):
     def __init__(self, declarations):
         self.declarations = declarations
+
 
 class BinaryOpNode(Node):
     def __init__(self, left, op, right):
@@ -78,25 +92,31 @@ class BinaryOpNode(Node):
         self.op = op
         self.right = right
 
+
 class InNode(Node):
     def __init__(self):
         pass
+
 
 class OutNode(Node):
     def __init__(self, value):
         self.value = value
 
+
 class ReadNode(Node):
     def __init__(self, value):
         self.value = value
+
 
 class EINode(Node):
     def __init__(self):
         pass
 
+
 class DINode(Node):
     def __init__(self):
         pass
+
 
 class Parser:
     tokens: list
@@ -122,9 +142,7 @@ class Parser:
     def consume(self, token_type):
         token = self.current()
         if token.type != token_type:
-            raise SyntaxError(
-                f"Expected {token_type}, got {token.type}"
-            )
+            raise SyntaxError(f"Expected {token_type}, got {token.type}")
 
         self.advance()
         return token
@@ -132,9 +150,7 @@ class Parser:
     def parse_program(self):
         declarations = []
         while self.current().type != TokenType.EOF:
-            declarations.append(
-                self.parse_declaration()
-            )
+            declarations.append(self.parse_declaration())
 
         return ProgramNode(declarations)
 
@@ -155,9 +171,7 @@ class Parser:
 
     def parse_var_decl(self):
         self.consume(TokenType.VAR)
-        name = self.consume(
-            TokenType.IDENTIFIER
-        ).value
+        name = self.consume(TokenType.IDENTIFIER).value
 
         value = None
         if self.match(TokenType.ASSIGN):
@@ -169,41 +183,26 @@ class Parser:
     def parse_block(self):
         self.consume(TokenType.LFIG)
         statements = []
-        while self.current().type not in (
-                TokenType.RFIG,
-                TokenType.EOF
-        ):
+        while self.current().type not in (TokenType.RFIG, TokenType.EOF):
             if self.current().type == TokenType.EOF:
                 raise SyntaxError("Expected '}'")
-            statements.append(
-                self.parse_statement()
-            )
+            statements.append(self.parse_statement())
 
         self.consume(TokenType.RFIG)
         return statements
 
     def parse_func_decl(self):
         self.consume(TokenType.FUNC)
-        name = self.consume(
-            TokenType.IDENTIFIER
-        ).value
+        name = self.consume(TokenType.IDENTIFIER).value
         self.consume(TokenType.LBRACKET)
         params = []
         if self.current().type != TokenType.RBRACKET:
-            params.append(
-                self.consume(
-                    TokenType.IDENTIFIER
-                ).value
-            )
+            params.append(self.consume(TokenType.IDENTIFIER).value)
 
             while self.current().type == TokenType.COMMA:
                 self.advance()
 
-                params.append(
-                    self.consume(
-                        TokenType.IDENTIFIER
-                    ).value
-                )
+                params.append(self.consume(TokenType.IDENTIFIER).value)
 
         self.consume(TokenType.RBRACKET)
         body = self.parse_block()
@@ -214,9 +213,7 @@ class Parser:
         self.consume(TokenType.IDENTIFIER)
         self.consume(TokenType.LBRACKET)
 
-        port = self.consume(
-            TokenType.NUMBER
-        ).value
+        port = self.consume(TokenType.NUMBER).value
 
         self.consume(TokenType.RBRACKET)
         body = self.parse_block()
@@ -286,9 +283,7 @@ class Parser:
         raise SyntaxError("Invalid statement")
 
     def parse_assignment(self):
-        name = self.consume(
-            TokenType.IDENTIFIER
-        ).value
+        name = self.consume(TokenType.IDENTIFIER).value
 
         self.consume(TokenType.ASSIGN)
         value = self.parse_expression()
@@ -308,11 +303,7 @@ class Parser:
             self.advance()
             else_body = self.parse_block()
 
-        return IfNode(
-            condition,
-            then_body,
-            else_body
-        )
+        return IfNode(condition, then_body, else_body)
 
     def parse_while(self):
         self.consume(TokenType.WHILE)
@@ -336,22 +327,16 @@ class Parser:
         return ReturnNode(value)
 
     def parse_function_call(self):
-        name = self.consume(
-            TokenType.IDENTIFIER
-        ).value
+        name = self.consume(TokenType.IDENTIFIER).value
         self.consume(TokenType.LBRACKET)
         args = []
 
         if self.current().type != TokenType.RBRACKET:
-            args.append(
-                self.parse_expression()
-            )
+            args.append(self.parse_expression())
             while self.current().type == TokenType.COMMA:
                 self.advance()
 
-                args.append(
-                    self.parse_expression()
-                )
+                args.append(self.parse_expression())
 
         self.consume(TokenType.RBRACKET)
 
@@ -364,12 +349,12 @@ class Parser:
         op = self.current().value
 
         if self.current().type not in (
-                TokenType.EQ,
-                TokenType.NE,
-                TokenType.LT,
-                TokenType.LE,
-                TokenType.GR,
-                TokenType.GE
+            TokenType.EQ,
+            TokenType.NE,
+            TokenType.LT,
+            TokenType.LE,
+            TokenType.GR,
+            TokenType.GE,
         ):
             raise SyntaxError("Expected comparison")
 
@@ -382,21 +367,13 @@ class Parser:
     def parse_expression(self):
         node = self.parse_term()
 
-        while self.current().type in (
-            TokenType.PLUS,
-            TokenType.MINUS,
-            TokenType.ADC
-        ):
+        while self.current().type in (TokenType.PLUS, TokenType.MINUS, TokenType.ADC):
             op = self.current().value
             self.advance()
 
             right = self.parse_term()
 
-            node = BinaryOpNode(
-                left=node,
-                op=op,
-                right=right
-            )
+            node = BinaryOpNode(left=node, op=op, right=right)
 
         return node
 
@@ -409,11 +386,7 @@ class Parser:
 
             right = self.parse_factor()
 
-            node = BinaryOpNode(
-                node,
-                op,
-                right
-            )
+            node = BinaryOpNode(node, op, right)
 
         return node
 
@@ -436,20 +409,10 @@ class Parser:
         if token.type == TokenType.MINUS:
             self.advance()
 
-            return BinaryOpNode(
-                NumberNode(0),
-                "-",
-                self.parse_factor()
-            )
+            return BinaryOpNode(NumberNode(0), "-", self.parse_factor())
 
         if token.type == TokenType.IDENTIFIER:
-
-            if (
-                    self.pos + 1 < len(self.tokens)
-                    and
-                    self.tokens[self.pos + 1].type
-                    == TokenType.LBRACKET
-            ):
+            if self.pos + 1 < len(self.tokens) and self.tokens[self.pos + 1].type == TokenType.LBRACKET:
                 return self.parse_function_call()
 
             self.advance()
@@ -474,8 +437,4 @@ class Parser:
             self.consume(TokenType.RBRACKET)
             return ReadNode(node)
 
-        raise SyntaxError(
-            f"Unexpected token {token.type}"
-        )
-
-
+        raise SyntaxError(f"Unexpected token {token.type}")

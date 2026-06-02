@@ -1,8 +1,6 @@
-
-
 class ExternalDevice:
     DR: int = 2
-    SR: int = 0 # младший бит - бит готовности, второй младший бит - запрос прерывания
+    SR: int = 0  # младший бит - бит готовности, второй младший бит - запрос прерывания
     buffer_str: list[str]
     buffer_int: list[int]
 
@@ -54,10 +52,9 @@ class IOController:
     def __init__(self, input_schedule=None):
         if input_schedule is None:
             input_schedule = [(1, "\n")]
-        self.devices = {0: ExternalDevice(schedule=input_schedule),
-                        1: ExternalDevice()}
+        self.devices = {0: ExternalDevice(schedule=input_schedule), 1: ExternalDevice()}
 
-    def in_(self, port: int, register: int): # if register == 0 then SR else DR
+    def in_(self, port: int, register: int):  # if register == 0 then SR else DR
         self.buffer = self.devices[port].read_status() if register == 0 else self.devices[port].read_data()
 
     def out(self, port: int):

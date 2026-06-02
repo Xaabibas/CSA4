@@ -21,7 +21,7 @@ class Machine:
     AR: int = 0
     ZEROES: int = 0
     memory_bus: int | Command = 0
-    DR_selector: bool = True # True - alu; False - memory
+    DR_selector: bool = True  # True - alu; False - memory
 
     def __init__(self, memory):
         self.alu = ALU()
@@ -54,7 +54,6 @@ class Machine:
     def load_right_zero(self):
         self.alu.right = 0
 
-
     def latch_ac(self):
         self.AC = self.alu.out
 
@@ -62,7 +61,7 @@ class Machine:
         self.BR = self.alu.out
 
     def latch_ps(self):
-        self.PS = self.alu.out & (2 ** MagicNumber.PS_LEN.value - 1)
+        self.PS = self.alu.out & (2**MagicNumber.PS_LEN.value - 1)
 
     def latch_ps_flags(self):
         nzvc = (self.alu.N << 3) | (self.alu.Z << 2) | (self.alu.V << 1) | self.alu.C
@@ -75,7 +74,7 @@ class Machine:
         self.PS = self.PS & 0x2F
 
     def latch_ar(self):
-        self.AR = self.alu.out & (2 ** MagicNumber.ADDR_LEN.value - 1)
+        self.AR = self.alu.out & (2**MagicNumber.ADDR_LEN.value - 1)
 
     def latch_ip(self):
         self.IP = self.alu.out
@@ -84,7 +83,7 @@ class Machine:
         self.CR = self.memory_bus
 
     def latch_sp(self):
-        self.SP = self.alu.out & (2 ** MagicNumber.ADDR_LEN.value - 1)
+        self.SP = self.alu.out & (2**MagicNumber.ADDR_LEN.value - 1)
 
     def latch_dr(self):
         if self.DR_selector:
@@ -93,13 +92,11 @@ class Machine:
             self.DR = self.memory_bus
         self.DR_selector = True
 
-
     def write(self, tick_callback, now: Callable):
         self.memory.write(self.AR, self.DR, tick_callback, now)
 
     def read(self, tick_callback, now: Callable):
         self.memory_bus = self.memory.read(self.AR, tick_callback, now)
-
 
     def in_(self):
         self.AC = self.io_controller.buffer
@@ -109,6 +106,7 @@ class Machine:
 
     def latch_iport(self):
         self.BR = self.io_controller.IPort
+
 
 class ControlUnit:
     def __init__(self, file):
@@ -120,7 +118,7 @@ class ControlUnit:
             AddrMode.RELATIVE_IP: self.relative_ip_addr,
             AddrMode.RELATIVE_SP: self.relative_sp_addr,
             AddrMode.RELATIVE_INDIRECT: self.relative_indirect,
-            AddrMode.DIRECT_LOAD: self.direct_load
+            AddrMode.DIRECT_LOAD: self.direct_load,
         }
         self.execution = {
             OpCode.NOP: self.nope,
@@ -153,15 +151,17 @@ class ControlUnit:
             OpCode.JMI: self.jump_if_minus,
             OpCode.JPL: self.jump_if_plus,
             OpCode.JGE: self.jump_if_greater_or_equal,
-            OpCode.JLT: self.jump_if_less
+            OpCode.JLT: self.jump_if_less,
         }
         self.file = file
         self.instructions = []
 
     def snapshot(self, info):
-        return (f"Tick #{self.tick:^5} - " +
-               f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.IP:07}, AR: {self.machine.IP:07}" +
-               f"{"" if info == "" else "; " + info}")
+        return (
+            f"Tick #{self.tick:^5} - "
+            + f"AC: {self.machine.AC:010}, BR: {self.machine.BR:010}, PS: {self.machine.PS:03}, DR: {self.machine.DR:010}, CR: {self.machine.CR:010}, IP: {self.machine.IP:07}, SP: {self.machine.IP:07}, AR: {self.machine.IP:07}"
+            + f"{'' if info == '' else '; ' + info}"
+        )
 
     def tick_(self, info=""):
         self.tick += 1
@@ -175,11 +175,7 @@ class ControlUnit:
 
     def command_repr(self):
         if isinstance(self.machine.CR, Command):
-            return (
-                f"{self.machine.AR} - "
-                f"{self.machine.CR.to_hex_code()} - "
-                f"{self.machine.CR.to_string()}"
-            )
+            return f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}"
 
         return "0"
 
@@ -205,8 +201,10 @@ class ControlUnit:
         if isinstance(self.machine.CR, int):
             self.machine.CR = decode(self.machine.CR)
 
-        self.tick_(info="INSTRUCTION FETCH; " + f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}; ")
-
+        self.tick_(
+            info="INSTRUCTION FETCH; "
+            + f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}; "
+        )
 
         self.instructions.append(f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}")
 
@@ -668,9 +666,7 @@ class ControlUnit:
         self.machine.latch_ip()
         self.tick_(info="HANDLE INTERRUPT")
 
-
         self.machine.io_controller.IREQ = False
-
 
     def cycle(self):
         self.instruction_fetch_stage()
@@ -703,9 +699,11 @@ class ControlUnit:
             print("Output buffer (str):", self.machine.io_controller.devices[1].buffer_str)
             print("Output buffer (int):", self.machine.io_controller.devices[1].buffer_int)
 
-if __name__ == "__main__":
 
-    assert 4 <= len(sys.argv) <= 5, "Wrong argument count: python Machine.py <source_file> <memory_file> <debug_file> [<input_file>] "
+if __name__ == "__main__":
+    assert 4 <= len(sys.argv) <= 5, (
+        "Wrong argument count: python Machine.py <source_file> <memory_file> <debug_file> [<input_file>] "
+    )
 
     if len(sys.argv) == 4:
         _, source_file, memory_file, debug_file = sys.argv

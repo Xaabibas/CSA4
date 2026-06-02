@@ -15,11 +15,11 @@ def normalize_output(text):
         lines.pop()
     return "\n".join(lines)
 
+
 @pytest.mark.golden_test("golden/*.yml")
 def test(golden):
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-
         source_file = os.path.join(tmp_dir, "source")
         binary_file = os.path.join(tmp_dir, "binary")
         memory_file = os.path.join(tmp_dir, "memory")

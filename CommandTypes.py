@@ -50,6 +50,7 @@ class OpCode(Enum):
     JGE = 0x75
     JLT = 0x76
 
+
 class AddrMode(Enum):
     DIRECT = 0x0
 
@@ -59,6 +60,7 @@ class AddrMode(Enum):
 
     DIRECT_LOAD = 0xF
 
+
 @dataclass
 class Command:
     name: str
@@ -66,7 +68,7 @@ class Command:
     addr_mode: AddrMode
     arg: int
 
-    def __init__(self, op_code: OpCode, addr_mode:AddrMode, arg: int):
+    def __init__(self, op_code: OpCode, addr_mode: AddrMode, arg: int):
         self.op_code = op_code
         self.addr_mode = addr_mode
         self.arg = arg
@@ -93,8 +95,11 @@ class Command:
         return format(self.to_int(), format_spec)
 
     def to_int(self):
-        return (((self.op_code.value << MagicNumber.OP_CODE_POS.value) + (self.addr_mode.value << MagicNumber.ADDR_POS.value) + self.arg)
-                & (2 ** MagicNumber.WORD_LEN.value - 1))
+        return (
+            (self.op_code.value << MagicNumber.OP_CODE_POS.value)
+            + (self.addr_mode.value << MagicNumber.ADDR_POS.value)
+            + self.arg
+        ) & (2**MagicNumber.WORD_LEN.value - 1)
 
     def to_hex_code(self):
         command_bytes = self.to_int().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
@@ -108,6 +113,7 @@ class Command:
     def to_bytes(self):
         return self.to_int().to_bytes(MagicNumber.WORD_LEN.value // 8, "little", signed=True)
 
+
 def decode(code):
     op_code = OpCode(code >> 24)
     try:
@@ -118,6 +124,7 @@ def decode(code):
 
     return Command(op_code, addr_mode, arg)
 
+
 def read_commands_from_file(filename):
     code = []
 
@@ -127,7 +134,7 @@ def read_commands_from_file(filename):
         size = MagicNumber.WORD_LEN.value // 8
 
         for i in range(0, len(data), size):
-            command_bytes = data[i: i + size]
+            command_bytes = data[i : i + size]
 
             command_int = int.from_bytes(command_bytes, "little", signed=True)
 
