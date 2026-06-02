@@ -34,15 +34,16 @@ class Memory:
 
     def read(self, addr: int, tick_callback, now: Callable):
         if addr in self.cache.lines:
-            tick_callback(info="CACHE HIT; ")
+            tick_callback(info="CACHE HIT")
             self.cache.touch(addr, now())
             return self.cache.lines[addr].data
         if len(self.cache.lines) == MagicNumber.CACHE_LINES_COUNT.value and MagicNumber.CACHE_LINES_COUNT.value != 0:
             victim = self.cache.find_lru_line()
             del self.cache.lines[victim]
 
-        for _ in range(MagicNumber.MEMORY_ACCESS_TIME.value):
-            tick_callback(info="CACHE MISS; ")
+        tick_callback(info="CACHE MISS")
+        for _ in range(MagicNumber.MEMORY_ACCESS_TIME.value - 1):
+            tick_callback(info="MEMORY WAITING")
 
         value = self.memory.get(addr, 0)
         if MagicNumber.CACHE_LINES_COUNT.value != 0:
@@ -58,7 +59,7 @@ class Memory:
         self.memory[addr] = value
 
         for _ in range(MagicNumber.MEMORY_ACCESS_TIME.value):
-            tick_callback(info="WRITE-THROUGH; ")
+            tick_callback(info="WRITE-THROUGH")
 
         if addr in self.cache.lines:
             self.cache.lines[addr].data = value
