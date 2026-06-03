@@ -395,4 +395,62 @@ python Translator.py <source_file> <dest_file> <memory_file> [<debug_file>]
 
 ---
 
+## Кеш
+
+---
+
 ## Тестирование
+
+Тестирование осуществляется с помощью golden test-ов, реализованных для следующих программ:
+  - [hello.yml](golden/hello.yml) - напечатать `Hello, World!`
+  - [cat.yml](golden/cat.yml) - напечатать данные, поданные на сход симулятору через файл ввода
+  - [hello_user_name.yml](golden/hello_user_name.yml) - запросить у пользователя имя, считать его и вывести приветствие
+  - [sort.yml](golden/sort.yml) - пользователь через файл ввода загружает в систему список чисел, в ответ выводит отсортированные данные
+  - [64.yml](golden/64.yml) - арифметика двойной точности - демонстрация работы с 64-битными числами
+  - [prob1.yml](golden/prob1.yml) - Euler problem 4 [link](https://projecteuler.net/problem=4)
+
+Скрипт выполнения интеграционных тестов - [integration_test.py](integration_test.py)
+
+CI сконфигурирован с помощью GitHub Actions:
+```
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-golden ruff mypy pyyaml
+
+    - name: Lint with ruff
+      run: |
+        ruff check . --config pyproject.toml
+        ruff format --check .
+
+    - name: Type check with mypy
+      run: |
+        mypy . --ignore-missing-imports
+
+    - name: Run tests
+      run: |
+        pytest integration_test.py -v --tb=short
+```
+
+Пример использования и журнал работы процессора на примере `cat`:
+
