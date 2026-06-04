@@ -27,11 +27,11 @@ source: |-
 
   print_string(array);
 stdin: |-
-  [(5, 100), (23, 1), (125, 125), (385, 555), (432, 12), (533, 0), (612, 9858), (684, 123), (754, '\n')]
+  [(1, 0), (800, 1), (1300, 125),  (1800, 555), (2100, 12), (2600, 9858), (3100, 123), (3600, '\n')]
 stdout: |-
-  Executed instructions: 1578         
-  Output buffer (str): ['\x00', '\x01', '\x0c', 'd', '{', '}', 'ȫ', '⚂']
-  Output buffer (int): [0, 1, 12, 100, 123, 125, 555, 9858]
+  Executed instructions: 1299
+  Output buffer (str): ['\x00', '\x01', '\x0c', '{', '}', 'ȫ', '⚂']
+  Output buffer (int): [0, 1, 12, 123, 125, 555, 9858]
 out_translate: |-
   CODE:
    0002048 - 0x07000000 - DI

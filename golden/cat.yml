@@ -3,9 +3,9 @@ source: |-
 
   print_string(input);
 stdin: |-
-  [(120, 'h'), (356, 'e'), (438, 'l'),  (500, 'l'), (695, 'o'), (754, '\n')]
+  [(1, 'h'), (800, 'e'), (1300, 'l'),  (1800, 'l'), (2100, 'o'), (2500, '\n')]
 stdout: |-
-  Executed instructions: 285                      
+  Executed instructions: 291
   Output buffer (str): ['h', 'e', 'l', 'l', 'o']
   Output buffer (int): [104, 101, 108, 108, 111]
 out_translate: |-
