@@ -30,8 +30,6 @@ class ExternalDevice:
     def update(self, now: int):
         if self.schedule is None or len(self.schedule) == 0:
             return
-        if self.SR & 0x2:
-            return
         next_time = self.schedule[0][0]
 
         if now >= next_time:

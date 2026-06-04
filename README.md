@@ -7,7 +7,8 @@
 ## Язык программирования `Alg`
 
 ### Синтаксис языка
-```
+
+```ebnf
 <program> ::= <decl> | <decl> <program>
 
 <decl> ::= <var_decl> | <func_decl> | <ifunc_decl> | <statement>
@@ -549,7 +550,7 @@ Machine.py <source_file> <memory_file> <debug_file> [<input_file>]
 Скрипт выполнения интеграционных тестов - [integration_test.py](integration_test.py)
 
 CI сконфигурирован с помощью GitHub Actions:
-```
+```yaml
 name: CI
 
 on:
@@ -591,12 +592,11 @@ jobs:
 
 Пример использования и журнал работы процессора на примере `cat`:
 
-```
+```console
 $ cat cat.source
 var input = input_string();
 
 print_string(input);
-
 
 $ python3 Translator.py cat.source cat.bin cat.memory cat.translate
 
