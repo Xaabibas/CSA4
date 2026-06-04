@@ -169,8 +169,6 @@ class ControlUnit:
         logging.debug(log)
         self.file.write(log + "\n")
 
-        if self.machine.PS & 0x20 or self.machine.io_controller.IREQ:
-            return
         self.machine.io_controller.update(self.tick)
 
     def command_repr(self):
