@@ -82,5 +82,10 @@ class ALU:
         self.out = self.left & self.right
         self.set_nz()
 
+    def or_(self):
+        self.to_int()
+        self.out = self.left | self.right
+        self.set_nz()
+
     def extend(self):
         self.out = self.right.arg

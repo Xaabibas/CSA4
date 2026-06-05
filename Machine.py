@@ -206,26 +206,34 @@ class ControlUnit:
 
         self.instructions.append(f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}")
 
-    def operand_fetch_stage(self):
-
+    def address_fetch(self):
         op_code = self.machine.CR.op_code
         if not (op_code.value & 0xF0):
             return
-
         addr_mode = self.machine.CR.addr_mode
         if addr_mode != AddrMode.DIRECT_LOAD:
             self.address_prepare[addr_mode]()
-        else:
+
+    def operand_fetch_stage(self):
+        op_code = self.machine.CR.op_code
+        addr_mode = self.machine.CR.addr_mode
+
+        if not (op_code.value & 0xF0):
+            return
+
+        if op_code == OpCode.STR:
+            return
+
+        if addr_mode == AddrMode.DIRECT_LOAD:
             self.machine.load_cr()
             self.machine.alu.extend()
             self.machine.latch_dr()
             self.tick_()
             return
 
-        if op_code != OpCode.STR:
-            self.machine.read(self.tick_, self.now)
-            self.machine.DR_selector = False
-            self.machine.latch_dr()
+        self.machine.read(self.tick_, self.now)
+        self.machine.DR_selector = False
+        self.machine.latch_dr()
 
     def prepare_address_direct(self):
         self.machine.load_cr()
@@ -339,8 +347,8 @@ class ControlUnit:
         self.machine.load_ac()
         self.machine.load_right_zero()
         self.machine.alu.sum()
-        self.machine.load_dr()
         self.machine.latch_dr()
+        self.tick_()
 
         self.machine.write(self.tick_, self.now)
 
@@ -520,18 +528,8 @@ class ControlUnit:
     def or_(self):
         self.machine.load_ac()
         self.machine.load_dr()
-        self.machine.alu.invert_left()
-        self.machine.alu.invert_right()
-        self.machine.alu.and_()
+        self.machine.alu.or_()
         self.machine.latch_br()
-        self.tick_()
-
-        self.machine.load_br()
-        self.machine.alu.invert_left()
-        self.machine.load_right_zero()
-        self.machine.alu.sum()
-        self.machine.latch_ac()
-        self.machine.latch_ps_flags()
         self.tick_()
 
     def neg(self):
@@ -692,6 +690,7 @@ class ControlUnit:
 
     def cycle(self):
         self.instruction_fetch_stage()
+        self.address_fetch()
         self.operand_fetch_stage()
         self.execute_stage()
         self.interrupt_stage()
