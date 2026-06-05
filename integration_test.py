@@ -63,7 +63,10 @@ def test(golden):
             translate_output = file.read()
         with open(binary_file, "rb") as file:
             code = file.read()
+        with open(debug_translate_file + ".ast", encoding="utf-8") as file:
+            ast = file.read()
 
         assert code == golden.out["out_code"]
+        assert normalize_output(ast) == golden.out["ast"]
         assert normalize_output(translate_output) == normalize_output(golden.out["out_code_hex"])
         assert normalize_output(stdout.getvalue()) == normalize_output(golden.out["out_stdout"])

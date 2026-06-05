@@ -1,7 +1,7 @@
 import sys
 
 from Analyzer import Analyzer
-from AST import Parser
+from AST import Parser, ast_dump
 from CodeGerator import CodeGenerator
 from Lexer import Lexer
 from MagicNumber import MagicNumber
@@ -30,6 +30,9 @@ class Translator:
 
         parser = Parser(tokens)
         ast = parser.parse_program()
+
+        with open(self.debug_file + ".ast", "w", encoding="utf-8") as f:
+            f.write(ast_dump(ast))
 
         analyzer = Analyzer()
         analyzer.analyze(ast)

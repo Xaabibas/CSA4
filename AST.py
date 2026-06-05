@@ -438,3 +438,133 @@ class Parser:
             return ReadNode(node)
 
         raise SyntaxError(f"Unexpected token {token.type}")
+
+
+def ast_dump(node, indent=0):
+    pad = "  " * indent
+
+    if node is None:
+        return f"{pad}None"
+
+    if isinstance(node, ProgramNode):
+        lines = [f"{pad}Program"]
+        for decl in node.declarations:
+            lines.append(ast_dump(decl, indent + 1))
+        return "\n".join(lines)
+
+    if isinstance(node, VarDeclNode):
+        lines = [f"{pad}VarDecl({node.name})"]
+        if node.value is not None:
+            lines.append(ast_dump(node.value, indent + 1))
+        return "\n".join(lines)
+
+    if isinstance(node, FunctionNode):
+        lines = [f"{pad}Function({node.name})"]
+
+        if node.params:
+            lines.append(f"{pad}  Params")
+
+            for param in node.params:
+                lines.append(f"{pad}    {param}")
+
+        lines.append(f"{pad}  Body")
+
+        for stmt in node.body:
+            lines.append(ast_dump(stmt, indent + 2))
+
+        return "\n".join(lines)
+
+    if isinstance(node, InterruptFunctionNode):
+        lines = [f"{pad}InterruptFunction(port={node.port})"]
+
+        for stmt in node.body:
+            lines.append(ast_dump(stmt, indent + 1))
+
+        return "\n".join(lines)
+
+    if isinstance(node, AssignNode):
+        lines = [f"{pad}Assign"]
+
+        if isinstance(node.name, str):
+            lines.append(f"{pad}  Target({node.name})")
+        else:
+            lines.append(ast_dump(node.name, indent + 1))
+
+        lines.append(ast_dump(node.value, indent + 1))
+
+        return "\n".join(lines)
+
+    if isinstance(node, NumberNode):
+        return f"{pad}Number({node.value})"
+
+    if isinstance(node, StringNode):
+        return f'{pad}String("{node.value}")'
+
+    if isinstance(node, CharNode):
+        return f"{pad}Char({node.value!r})"
+
+    if isinstance(node, IdentifierNode):
+        return f"{pad}Identifier({node.name})"
+
+    if isinstance(node, BinaryOpNode):
+        return f"{pad}BinaryOp({node.op})\n{ast_dump(node.left, indent + 1)}\n{ast_dump(node.right, indent + 1)}"
+
+    if isinstance(node, ConditionNode):
+        return f"{pad}Condition({node.op})\n{ast_dump(node.left, indent + 1)}\n{ast_dump(node.right, indent + 1)}"
+
+    if isinstance(node, IfNode):
+        lines = [
+            f"{pad}If",
+            ast_dump(node.condition, indent + 1),
+            f"{pad}  Then",
+        ]
+
+        for stmt in node.then_block:
+            lines.append(ast_dump(stmt, indent + 2))
+
+        if node.else_block:
+            lines.append(f"{pad}  Else")
+            for stmt in node.else_block:
+                lines.append(ast_dump(stmt, indent + 2))
+
+        return "\n".join(lines)
+
+    if isinstance(node, WhileNode):
+        lines = [
+            f"{pad}While",
+            ast_dump(node.condition, indent + 1),
+        ]
+
+        for stmt in node.body:
+            lines.append(ast_dump(stmt, indent + 1))
+
+        return "\n".join(lines)
+
+    if isinstance(node, FunctionCallNode):
+        lines = [f"{pad}Call({node.name})"]
+        for arg in node.args:
+            lines.append(ast_dump(arg, indent + 1))
+        return "\n".join(lines)
+
+    if isinstance(node, ReturnNode):
+        if node.value is None:
+            return f"{pad}Return"
+
+        return f"{pad}Return\n{ast_dump(node.value, indent + 1)}"
+
+    if isinstance(node, OutNode):
+        return f"{pad}Out\n{ast_dump(node.value, indent + 1)}"
+
+    if isinstance(node, InNode):
+        return f"{pad}In"
+
+    if isinstance(node, ReadNode):
+        return f"{pad}Read\n{ast_dump(node.value, indent + 1)}"
+
+    if isinstance(node, EINode):
+        return f"{pad}EI"
+
+    if isinstance(node, DINode):
+        return f"{pad}DI"
+
+    return f"{pad}{type(node).__name__}"

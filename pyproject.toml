@@ -107,4 +107,4 @@ lint.unfixable = [
 src = ["src"]
 
 [tool.ruff.lint.mccabe]
-max-complexity = 27   # raised from 7, otherwise the code becomes messy
+max-complexity = 35   # raised from 7, otherwise the code becomes messy
