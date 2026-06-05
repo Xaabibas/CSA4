@@ -1,3 +1,6 @@
+from ctypes import c_int32
+
+
 class ExternalDevice:
     DR: int = 2
     SR: int = 0  # младший бит - бит готовности, второй младший бит - запрос прерывания
@@ -22,7 +25,7 @@ class ExternalDevice:
             self.buffer_str.append(chr(data))
         except Exception:
             self.buffer_str.append("not-char")
-        self.buffer_int.append(data)
+        self.buffer_int.append(c_int32(data).value)
 
     def request_interrupt(self):
         self.SR = self.SR | 0x00000003

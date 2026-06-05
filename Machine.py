@@ -109,16 +109,15 @@ class Machine:
 
 
 class ControlUnit:
-    def __init__(self, file):
+    def __init__(self, file_name):
         self.tick = 0
         self.memory = Memory()
         self.machine = Machine(self.memory)
-        self.address_fetch = {
-            AddrMode.DIRECT: self.direct_addr,
-            AddrMode.RELATIVE_IP: self.relative_ip_addr,
-            AddrMode.RELATIVE_SP: self.relative_sp_addr,
-            AddrMode.RELATIVE_INDIRECT: self.relative_indirect,
-            AddrMode.DIRECT_LOAD: self.direct_load,
+        self.address_prepare = {
+            AddrMode.DIRECT: self.prepare_address_direct,
+            AddrMode.RELATIVE_IP: self.prepare_address_relative_ip,
+            AddrMode.RELATIVE_SP: self.prepare_address_relative_sp,
+            AddrMode.RELATIVE_INDIRECT: self.prepare_address_indirect,
         }
         self.execution = {
             OpCode.NOP: self.nope,
@@ -153,7 +152,8 @@ class ControlUnit:
             OpCode.JGE: self.jump_if_greater_or_equal,
             OpCode.JLT: self.jump_if_less,
         }
-        self.file = file
+        self.file_name = file_name
+        self.file = open(file_name, "w")
         self.instructions = []
 
     def snapshot(self, info):
@@ -213,47 +213,27 @@ class ControlUnit:
             return
 
         addr_mode = self.machine.CR.addr_mode
-        self.address_fetch[addr_mode]()
+        if addr_mode != AddrMode.DIRECT_LOAD:
+            self.address_prepare[addr_mode]()
+        else:
+            self.machine.load_cr()
+            self.machine.alu.extend()
+            self.machine.latch_dr()
+            self.tick_()
+            return
 
-    def direct_addr(self):
-        self.machine.load_cr()
-        self.machine.load_left_zero()
-        self.machine.alu.sum()
-        self.machine.latch_ar()
-        self.tick_()
+        if op_code != OpCode.STR:
+            self.machine.read(self.tick_, self.now)
+            self.machine.DR_selector = False
+            self.machine.latch_dr()
 
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
-        self.machine.latch_dr()
-
-    def relative_ip_addr(self):
-        self.machine.load_br()
-        self.machine.load_cr()
-        self.machine.alu.sum()
-        self.machine.latch_ar()
-        self.tick_()
-
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
-        self.machine.latch_dr()
-
-    def relative_sp_addr(self):
+    def prepare_address_direct(self):
         self.machine.load_cr()
         self.machine.alu.extend()
-        self.machine.latch_br()
-        self.tick_()
-
-        self.machine.load_br()
-        self.machine.load_sp()
-        self.machine.alu.sum()
         self.machine.latch_ar()
         self.tick_()
 
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
-        self.machine.latch_dr()
-
-    def relative_indirect(self):
+    def prepare_address_indirect(self):
         self.machine.load_cr()
         self.machine.alu.extend()
         self.machine.latch_ar()
@@ -269,14 +249,23 @@ class ControlUnit:
         self.machine.latch_ar()
         self.tick_()
 
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
-        self.machine.latch_dr()
-
-    def direct_load(self):
+    def prepare_address_relative_sp(self):
         self.machine.load_cr()
         self.machine.alu.extend()
-        self.machine.latch_dr()
+        self.machine.latch_br()
+        self.tick_()
+
+        self.machine.load_br()
+        self.machine.load_sp()
+        self.machine.alu.sum()
+        self.machine.latch_ar()
+        self.tick_()
+
+    def prepare_address_relative_ip(self):
+        self.machine.load_br()
+        self.machine.load_cr()
+        self.machine.alu.sum()
+        self.machine.latch_ar()
         self.tick_()
 
     def execute_stage(self):
@@ -350,8 +339,8 @@ class ControlUnit:
         self.machine.load_ac()
         self.machine.load_right_zero()
         self.machine.alu.sum()
+        self.machine.load_dr()
         self.machine.latch_dr()
-        self.tick_()
 
         self.machine.write(self.tick_, self.now)
 
@@ -424,6 +413,28 @@ class ControlUnit:
         self.machine.load_dr()
         self.machine.load_left_zero()
         self.machine.alu.sum()
+        self.machine.latch_ac()
+        self.tick_()
+
+        self.machine.load_sp()
+        self.machine.load_left_zero()
+        self.machine.alu.sum()
+        self.machine.latch_ar()
+        self.machine.latch_br()
+        self.tick_()
+
+        self.machine.load_br()
+        self.machine.load_right_zero()
+        self.machine.alu.inc()
+        self.machine.latch_sp()
+
+        self.machine.read(self.tick_, self.now)
+        self.machine.DR_selector = False
+        self.machine.latch_dr()
+
+        self.machine.load_dr()
+        self.machine.load_left_zero()
+        self.machine.alu.sum()
         self.machine.latch_ip()
         self.tick_()
 
@@ -442,7 +453,6 @@ class ControlUnit:
         self.machine.read(self.tick_, self.now)
         self.machine.DR_selector = False
         self.machine.latch_dr()
-        self.tick_()
 
         self.machine.load_dr()
         self.machine.load_left_zero()
@@ -643,6 +653,20 @@ class ControlUnit:
         self.tick_(info="HANDLE INTERRUPT")
 
         self.machine.write(self.tick_, self.now)
+        self.machine.load_sp()
+        self.machine.load_left_zero()
+        self.machine.alu.invert_left()
+        self.machine.alu.sum()
+        self.machine.latch_sp()
+        self.machine.latch_ar()
+
+        self.machine.load_ac()
+        self.machine.load_left_zero()
+        self.machine.alu.sum()
+        self.machine.latch_dr()
+        self.tick_(info="HANDLE INTERRUPT")
+
+        self.machine.write(self.tick_, self.now)
 
         self.machine.PS |= 0x20
 
@@ -684,7 +708,7 @@ class ControlUnit:
     def load_input(self, input_tokens):
         self.machine.io_controller = IOController(input_tokens)
 
-    def run(self, limit: int = 200000):
+    def run(self, limit: int = 200000, max_lines: int = 7000, keep_lines: int = 1000):
         cnt = 0
         try:
             for i in range(limit):
@@ -696,6 +720,23 @@ class ControlUnit:
             print("Executed instructions:", cnt)
             print("Output buffer (str):", self.machine.io_controller.devices[1].buffer_str)
             print("Output buffer (int):", self.machine.io_controller.devices[1].buffer_int)
+        finally:
+            self.file.close()
+
+            with open(self.file_name, encoding="utf-8") as f:
+                lines = f.readlines()
+
+            line_count = len(lines)
+
+            if line_count > max_lines:
+                truncated_file = self.file_name + ".truncated"
+                header = f"WARNING: log was truncated from {line_count} lines to last {keep_lines}"
+
+                last_lines = lines[-keep_lines:] if keep_lines < len(lines) else lines
+
+                with open(truncated_file, "w", encoding="utf-8") as f:
+                    f.write(header + "\n")
+                    f.writelines(last_lines)
 
 
 if __name__ == "__main__":
@@ -711,22 +752,21 @@ if __name__ == "__main__":
 
     code = read_commands_from_file(source_file)
 
-    with open(debug_file, "w", encoding="utf-8") as debug:
-        cu = ControlUnit(debug)
+    cu = ControlUnit(debug_file)
 
-        cu.load_code(code)
+    cu.load_code(code)
 
-        with open(memory_file, encoding="utf-8") as file:
-            memory_text = file.read()
-            memory = eval(memory_text)
+    with open(memory_file, encoding="utf-8") as file:
+        memory_text = file.read()
+        memory = eval(memory_text)
 
-            cu.load_memory(memory)
+        cu.load_memory(memory)
 
-        if input_file is not None:
-            with open(input_file, encoding="utf-8") as file:
-                input_text = file.read()
-                input_tokens = eval(input_text)
+    if input_file is not None:
+        with open(input_file, encoding="utf-8") as file:
+            input_text = file.read()
+            input_tokens = eval(input_text)
 
-                cu.load_input(input_tokens)
+            cu.load_input(input_tokens)
 
-        cu.run()
+    cu.run()

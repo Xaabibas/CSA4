@@ -1,7 +1,7 @@
 !$;
 
-var buffer = "________________________________________________________________________________________________________________________________";
-var len = 0;
+var BuFFeR = "________________________________________________________________________________________________________________________________";
+var leN = 0;
 var ready_flag = 0;
 
 func input_int() {
@@ -12,10 +12,10 @@ ifunc handle_interrupt(0) {
     var next = input_int();
     if (next == '\n') {
         ready_flag = 1;
-        &(buffer) = len;
+        &(BuFFeR) = leN;
     } else {
-        len = len + 1;
-        &(buffer + len) = next;
+        leN = leN + 1;
+        &(BuFFeR + leN) = next;
     }
 }
 
@@ -23,19 +23,19 @@ func input_string() {
     while (ready_flag != 1) {
 
     }
-    return buffer;
+    return BuFFeR;
 }
 
-func print_int(c) {
-    # c;
+func print_int(C_) {
+    # C_;
 }
 
-func print_string(s) {
-    var len_ = &(s);
-    var k = 1;
-    while (k <= len_) {
-        print_int(&(s + k));
-        k = k + 1;
+func print_string(S_) {
+    var leN_ = &(S_);
+    var K_ = 1;
+    while (K_ <= leN_) {
+        print_int(&(S_ + K_));
+        K_ = K_ + 1;
     }
 }
 

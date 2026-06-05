@@ -40,6 +40,8 @@ class Translator:
         code = generator.code
         memory = generator.memory
 
+        print("source LoC:", len(self.source.split("\n")), "code instr:", len(code))
+
         if self.debug_file is not None:
             with open(self.debug_file, "w") as file:
                 file.write("CODE:\n")

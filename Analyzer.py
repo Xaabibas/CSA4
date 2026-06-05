@@ -81,7 +81,7 @@ class Analyzer:
         for stmt in node.then_block:
             self.visit(stmt)
 
-        self.variables = old_vars
+        self.variables = old_vars.copy()
 
         if node.else_block:
             for stmt in node.else_block:
@@ -106,6 +106,8 @@ class Analyzer:
         if node.name in self.functions:
             raise Exception(f"Function '{node.name}' already declared")
 
+        old_variables = self.variables.copy()
+
         self.functions[node.name] = len(node.params)
 
         for param in node.params:
@@ -113,6 +115,8 @@ class Analyzer:
 
         for stmt in node.body:
             self.visit(stmt)
+
+        self.variables = old_variables
 
     def visit_interrupt_function_node(self, node):
         for stmt in node.body:
