@@ -117,7 +117,7 @@ class ControlUnit:
             AddrMode.DIRECT: self.prepare_address_direct,
             AddrMode.RELATIVE_IP: self.prepare_address_relative_ip,
             AddrMode.RELATIVE_SP: self.prepare_address_relative_sp,
-            AddrMode.RELATIVE_INDIRECT: self.prepare_address_indirect,
+            AddrMode.INDIRECT: self.prepare_address_indirect,
         }
         self.execution = {
             OpCode.NOP: self.nope,
@@ -211,7 +211,7 @@ class ControlUnit:
         if not (op_code.value & 0xF0):
             return
         addr_mode = self.machine.CR.addr_mode
-        if addr_mode != AddrMode.DIRECT_LOAD:
+        if addr_mode != AddrMode.IMMEDIATE:
             self.address_prepare[addr_mode]()
 
     def operand_fetch_stage(self):
@@ -224,7 +224,7 @@ class ControlUnit:
         if op_code == OpCode.STR:
             return
 
-        if addr_mode == AddrMode.DIRECT_LOAD:
+        if addr_mode == AddrMode.IMMEDIATE:
             self.machine.load_cr()
             self.machine.alu.extend()
             self.machine.latch_dr()

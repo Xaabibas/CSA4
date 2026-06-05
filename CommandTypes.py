@@ -56,9 +56,9 @@ class AddrMode(Enum):
 
     RELATIVE_IP = 0x8
     RELATIVE_SP = 0x9
-    RELATIVE_INDIRECT = 0xA
+    INDIRECT = 0xA
 
-    DIRECT_LOAD = 0xF
+    IMMEDIATE = 0xF
 
 
 @dataclass
@@ -82,7 +82,7 @@ class Command:
                 string += f" &({self.arg})"
             elif self.addr_mode == AddrMode.RELATIVE_IP:
                 string += f" ({self.arg})"
-            elif self.addr_mode == AddrMode.RELATIVE_INDIRECT:
+            elif self.addr_mode == AddrMode.INDIRECT:
                 string += f" (({self.arg}))"
             else:
                 string += f" #{self.arg}"
