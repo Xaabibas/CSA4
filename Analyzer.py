@@ -119,8 +119,12 @@ class Analyzer:
         self.variables = old_variables
 
     def visit_interrupt_function_node(self, node):
+        old_variables = self.variables.copy()
+
         for stmt in node.body:
             self.visit(stmt)
+
+        self.variables = old_variables
 
     def visit_function_call_node(self, node):
         if node.name not in self.functions:
