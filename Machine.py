@@ -206,34 +206,35 @@ class ControlUnit:
 
         self.instructions.append(f"{self.machine.AR} - {self.machine.CR.to_hex_code()} - {self.machine.CR.to_string()}")
 
-    def address_fetch(self):
+    def address_fetch_stage(self):
         op_code = self.machine.CR.op_code
         if not (op_code.value & 0xF0):
             return
+
         addr_mode = self.machine.CR.addr_mode
+
         if addr_mode != AddrMode.IMMEDIATE:
             self.address_prepare[addr_mode]()
 
     def operand_fetch_stage(self):
         op_code = self.machine.CR.op_code
-        addr_mode = self.machine.CR.addr_mode
-
         if not (op_code.value & 0xF0):
             return
 
         if op_code == OpCode.STR:
             return
 
-        if addr_mode == AddrMode.IMMEDIATE:
-            self.machine.load_cr()
-            self.machine.alu.extend()
+        addr_mode = self.machine.CR.addr_mode
+        if addr_mode != AddrMode.IMMEDIATE:
+            self.machine.read(self.tick_, self.now)
+            self.machine.DR_selector = False
             self.machine.latch_dr()
-            self.tick_()
             return
 
-        self.machine.read(self.tick_, self.now)
-        self.machine.DR_selector = False
+        self.machine.load_cr()
+        self.machine.alu.extend()
         self.machine.latch_dr()
+        self.tick_()
 
     def prepare_address_direct(self):
         self.machine.load_cr()
@@ -690,7 +691,7 @@ class ControlUnit:
 
     def cycle(self):
         self.instruction_fetch_stage()
-        self.address_fetch()
+        self.address_fetch_stage()
         self.operand_fetch_stage()
         self.execute_stage()
         self.interrupt_stage()
